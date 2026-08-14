@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Sign In{% endblock %}
+{% block body_class %}auth-shell{% endblock %}
+{% block wrapper_class %}auth-wrapper{% endblock %}
+
+{% block content %}
+<div class="login-page">
+    <div class="login-bg">
+        <div class="login-orb orb-1"></div>
+        <div class="login-orb orb-2"></div>
+        <div class="login-orb orb-3"></div>
+        <div class="grid-overlay"></div>
+    </div>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="login-logo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                        <path d="M2 17l10 5 10-5" />
+                        <path d="M2 12l10 5 10-5" />
+                    </svg>
+                </div>
+                <h1>ChurnGuard<span class="accent">AI</span></h1>
+                <p class="login-subtitle">Sign in to access the dashboard</p>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                <div class="flash-msg flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="{{ url_for('login') }}" class="login-form">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" placeholder="Enter username" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Enter password" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="login-btn" id="loginButton">
+                    <span>Sign In</span>
+                </button>
+            </form>
+            <div class="login-footer">
+                <p>First-time login: <code>admin</code> / <code>admin123</code></p>
+                <a href="{{ url_for('landing') }}" class="back-link">← Back to home</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

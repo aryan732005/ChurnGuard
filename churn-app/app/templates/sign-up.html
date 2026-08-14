@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Sign up{% endblock %}
+
+{% block content %}
+<div class="container" style="padding:48px 24px 80px">
+    <div class="page-header" style="text-align:center">
+        <h1>Create account</h1>
+        <p class="text-muted">Start predicting churn with ChurnGuard.</p>
+    </div>
+    <div id="clerk-sign-up-root" class="clerk-widget-card"></div>
+</div>
+{% endblock %}

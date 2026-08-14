@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+{% block title %}Predict Churn{% endblock %}
+{% block page_title %}Customer Churn Prediction{% endblock %}
+
+{% block content %}
+<div class="predict-page">
+    {% if validation_errors %}
+    <div class="flash-messages">
+        {% for err in validation_errors %}
+        <div class="flash-msg flash-error">{{ err }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if prediction %}
+    <div class="prediction-result-card {{ 'churn' if prediction == 'Churn' else 'safe' }} reveal">
+        <div class="result-main">
+            <div class="result-gauge-wrap">
+                <svg class="result-gauge" viewBox="0 0 120 120">
+                    <circle class="gauge-bg" cx="60" cy="60" r="52" />
+                    <circle class="gauge-fill" cx="60" cy="60" r="52" stroke-dasharray="{{ (probability * 3.27)|round(2) }} 326" />
+                </svg>
+                <div class="gauge-center">
+                    <span class="gauge-value">{{ probability }}%</span>
+                    <span class="gauge-label">Churn Prob.</span>
+                </div>
+            </div>
+            <div class="result-details">
+                <span class="risk-badge {{ risk_class }}">{{ risk_level }} Risk</span>
+                <h2>{{ 'Will Churn' if prediction == 'Churn' else 'Will Stay' }}</h2>
+                <p class="result-outcome">{{ prediction }}</p>
+                {% if prediction == 'Churn' %}
+                <p class="result-tip">High-risk customer — consider retention offers or proactive support.</p>
+                {% else %}
+                <p class="result-tip">Low churn risk — continue excellent service and monitor periodically.</p>
+                {% endif %}
+            </div>
+        </div>
+        {% if top_factors %}
+        <div class="result-factors">
+            <h4>Top Contributing Factors</h4>
+            <ul>
+                {% for f in top_factors %}
+                <li><span>{{ f.feature }}</span><span class="factor-impact {{ 'neg' if f.impact < 0 else 'pos' }}">{{ '%+.3f'|format(f.impact) }}</span></li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <form method="POST" class="predict-form">
+        <div class="form-section">
+            <h3 class="section-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                </svg>
+                Personal Information
+            </h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="gender">Gender</label>
+                    <select name="gender" id="gender">
+                        <option value="Male" {{ 'selected' if form_data.get('gender')=='Male' }}>Male</option>
+                        <option value="Female" {{ 'selected' if form_data.get('gender')=='Female' }}>Female</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="SeniorCitizen">Senior Citizen</label>
+                    <select name="SeniorCitizen" id="SeniorCitizen">
+                        <option value="0" {{ 'selected' if form_data.get('SeniorCitizen', 0)==0 }}>No</option>
+                        <option value="1" {{ 'selected' if form_data.get('SeniorCitizen')==1 }}>Yes</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="Partner">Partner</label>
+                    <select name="Partner" id="Partner">
+                        <option value="Yes" {{ 'selected' if form_data.get('Partner')=='Yes' }}>Yes</option>
+                        <option value="No" {{ 'selected' if form_data.get('Partner')=='No' or not form_data }}>No
+                        </option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="Dependents">Dependents</label>
+                    <select name="Dependents" id="Dependents">
+                        <option value="Yes" {{ 'selected' if form_data.get('Dependents')=='Yes' }}>Yes</option>
+                        <option value="No" {{ 'selected' if form_data.get('Dependents')=='No' or not form_data }}>No
+                        </option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3 class="section-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                </svg>
+                Account Information
+            </h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="tenure">Tenure (months)</label>
+                    <input type="number" name="tenure" id="tenure" min="0" max="72"
+                        value="{{ form_data.get('tenure', 12) }}">
+                </div>
+                <div class="form-group">
+                    <label for="Contract">Contract</label>
+                    <select name="Contract" id="Contract">
+                        <option value="Month-to-month" {{ 'selected' if form_data.get('Contract')=='Month-to-month' or
+                            not form_data }}>Month-to-month</option>
+                        <option value="One year" {{ 'selected' if form_data.get('Contract')=='One year' }}>One year
+                        </option>
+                        <option value="Two year" {{ 'selected' if form_data.get('Contract')=='Two year' }}>Two year
+                        </option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="PaperlessBilling">Paperless Billing</label>
+                    <select name="PaperlessBilling" id="PaperlessBilling">
+                        <option value="Yes" {{ 'selected' if form_data.get('PaperlessBilling')=='Yes' or not form_data
+                            }}>Yes</option>
+                        <option value="No" {{ 'selected' if form_data.get('PaperlessBilling')=='No' }}>No</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="PaymentMethod">Payment Method</label>
+                    <select name="PaymentMethod" id="PaymentMethod">
+                        <option value="Electronic check" {{ 'selected' if
+                            form_data.get('PaymentMethod')=='Electronic check' or not form_data }}>Electronic check
+                        </option>
+                        <option value="Mailed check" {{ 'selected' if form_data.get('PaymentMethod')=='Mailed check' }}>
+                            Mailed check</option>
+                        <option value="Bank transfer (automatic)" {{ 'selected' if
+                            form_data.get('PaymentMethod')=='Bank transfer (automatic)' }}>Bank transfer</option>
+                        <option value="Credit card (automatic)" {{ 'selected' if
+                            form_data.get('PaymentMethod')=='Credit card (automatic)' }}>Credit card</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3 class="section-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path
+                        d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
+                </svg>
+                Services
+            </h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="PhoneService">Phone Service</label>
+                    <select name="PhoneService" id="PhoneService">
+                        <option value="Yes" {{ 'selected' if form_data.get('PhoneService')=='Yes' or not form_data }}>
+                            Yes</option>
+                        <option value="No" {{ 'selected' if form_data.get('PhoneService')=='No' }}>No</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="MultipleLines">Multiple Lines</label>
+                    <select name="MultipleLines" id="MultipleLines">
+                        <option value="Yes" {{ 'selected' if form_data.get('MultipleLines')=='Yes' }}>Yes</option>
+                        <option value="No" {{ 'selected' if form_data.get('MultipleLines')=='No' or not form_data }}>No
+                        </option>
+                        <option value="No phone service" {{ 'selected' if
+                            form_data.get('MultipleLines')=='No phone service' }}>No phone service</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="InternetService">Internet Service</label>
+                    <select name="InternetService" id="InternetService">
+                        <option value="DSL" {{ 'selected' if form_data.get('InternetService')=='DSL' or not form_data
+                            }}>DSL</option>
+                        <option value="Fiber optic" {{ 'selected' if form_data.get('InternetService')=='Fiber optic' }}>
+                            Fiber optic</option>
+                        <option value="No" {{ 'selected' if form_data.get('InternetService')=='No' }}>No</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="OnlineSecurity">Online Security</label>
+                    <select name="OnlineSecurity" id="OnlineSecurity">
+                        <option value="Yes" {{ 'selected' if form_data.get('OnlineSecurity')=='Yes' }}>Yes</option>
+                        <option value="No" {{ 'selected' if form_data.get('OnlineSecurity')=='No' or not form_data }}>No
+                        </option>
+                        <option value="No internet service" {{ 'selected' if
+                            form_data.get('OnlineSecurity')=='No internet service' }}>No internet service</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="OnlineBackup">Online Backup</label>
+                    <select name="OnlineBackup" id="OnlineBackup">
+                        <option value="Yes" {{ 'selected' if form_data.get('OnlineBackup')=='Yes' }}>Yes</option>
+                        <option value="No" {{ 'selected' if form_data.get('OnlineBackup')=='No' or not form_data }}>No
+                        </option>
+                        <option value="No internet service" {{ 'selected' if
+                            form_data.get('OnlineBackup')=='No internet service' }}>No internet service</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="DeviceProtection">Device Protection</label>
+                    <select name="DeviceProtection" id="DeviceProtection">
+                        <option value="Yes" {{ 'selected' if form_data.get('DeviceProtection')=='Yes' }}>Yes</option>
+                        <option value="No" {{ 'selected' if form_data.get('DeviceProtection')=='No' or not form_data }}>
+                            No</option>
+                        <option value="No internet service" {{ 'selected' if
+                            form_data.get('DeviceProtection')=='No internet service' }}>No internet service</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="TechSupport">Tech Support</label>
+                    <select name="TechSupport" id="TechSupport">
+                        <option value="Yes" {{ 'selected' if form_data.get('TechSupport')=='Yes' }}>Yes</option>
+                        <option value="No" {{ 'selected' if form_data.get('TechSupport')=='No' or not form_data }}>No
+                        </option>
+                        <option value="No internet service" {{ 'selected' if
+                            form_data.get('TechSupport')=='No internet service' }}>No internet service</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="StreamingTV">Streaming TV</label>
+                    <select name="StreamingTV" id="StreamingTV">
+                        <option value="Yes" {{ 'selected' if form_data.get('StreamingTV')=='Yes' }}>Yes</option>
+                        <option value="No" {{ 'selected' if form_data.get('StreamingTV')=='No' or not form_data }}>No
+                        </option>
+                        <option value="No internet service" {{ 'selected' if
+                            form_data.get('StreamingTV')=='No internet service' }}>No internet service</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="StreamingMovies">Streaming Movies</label>
+                    <select name="StreamingMovies" id="StreamingMovies">
+                        <option value="Yes" {{ 'selected' if form_data.get('StreamingMovies')=='Yes' }}>Yes</option>
+                        <option value="No" {{ 'selected' if form_data.get('StreamingMovies')=='No' or not form_data }}>
+                            No</option>
+                        <option value="No internet service" {{ 'selected' if
+                            form_data.get('StreamingMovies')=='No internet service' }}>No internet service</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3 class="section-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="1" x2="12" y2="23" />
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                </svg>
+                Billing
+            </h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="MonthlyCharges">Monthly Charges ($)</label>
+                    <input type="number" step="0.01" name="MonthlyCharges" id="MonthlyCharges" min="18" max="120"
+                        value="{{ form_data.get('MonthlyCharges', 50) }}">
+                </div>
+                <div class="form-group">
+                    <label for="TotalCharges">Total Charges ($)</label>
+                    <input type="number" step="0.01" name="TotalCharges" id="TotalCharges" min="0" max="9000"
+                        value="{{ form_data.get('TotalCharges', 500) }}">
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="predict-btn" id="predictButton">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 6v6l4 2" />
+            </svg>
+            <span>Predict Churn</span>
+        </button>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard Overview{% endblock %}
+{% block page_actions %}
+<a href="{{ url_for('export_report') }}" class="btn btn-secondary btn-sm">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    Export Report
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-grid page-enter">
+    {% set s = stats %}
+    {% set best_name = s.get('best_model', '') %}
+    {% set best = s.get('model_results', {}).get(best_name, {}) %}
+
+    <div class="executive-summary reveal">
+        <h3>Executive Summary</h3>
+        <p>ChurnGuard AI helps telecom teams identify customers likely to cancel service before they leave. Using {{ s.get('total_customers', 0)|int }} anonymised customer records and {{ s.get('model_results', {})|length }} evaluated models (including a naive baseline), the system applies stratified cross-validation and class-weighting to handle ~{{ s.get('churn_rate', 0) }}% churn prevalence. The selected model — <strong>{{ best_name }}</strong> — achieves <strong>{{ (best.get('roc_auc', 0) * 100)|round(1) }}% ROC AUC</strong> on held-out test data, enabling proactive retention outreach rather than reactive firefighting.</p>
+    </div>
+    <!-- KPI Cards -->
+    <div class="kpi-row">
+        <div class="kpi-card">
+            <div class="kpi-icon blue">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+            </div>
+            <div class="kpi-content">
+                <span class="kpi-value" data-target="{{ stats.get('total_customers', 0) }}">0</span>
+                <span class="kpi-label">Total Customers</span>
+            </div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-icon red">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path
+                        d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                    <line x1="12" y1="9" x2="12" y2="13" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+            </div>
+            <div class="kpi-content">
+                <span class="kpi-value" data-target="{{ stats.get('churn_count', 0) }}">0</span>
+                <span class="kpi-label">Churned Customers</span>
+            </div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-icon amber">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                </svg>
+            </div>
+            <div class="kpi-content">
+                <span class="kpi-value" data-target="{{ stats.get('churn_rate', 0) }}" data-suffix="%">0%</span>
+                <span class="kpi-label">Churn Rate</span>
+            </div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-icon green">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="1" x2="12" y2="23" />
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                </svg>
+            </div>
+            <div class="kpi-content">
+                <span class="kpi-value" data-target="{{ stats.get('avg_monthly_charges', 0) }}"
+                    data-prefix="$">$0</span>
+                <span class="kpi-label">Avg Monthly Charges</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 1 -->
+    <div class="chart-row">
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3>Churn Distribution</h3>
+                <span class="chart-badge">Overview</span>
+            </div>
+            <div id="churnPieChart" class="chart-body"></div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3>Churn by Contract Type</h3>
+                <span class="chart-badge">Segmentation</span>
+            </div>
+            <div id="contractChart" class="chart-body"></div>
+        </div>
+    </div>
+
+    <!-- Charts Row 2 -->
+    <div class="chart-row">
+        <div class="chart-card full-width">
+            <div class="chart-header">
+                <h3>Model Performance Comparison</h3>
+                <span class="chart-badge">ML Models</span>
+            </div>
+            <div id="modelComparisonChart" class="chart-body"></div>
+        </div>
+    </div>
+
+    <!-- Best Model Info -->
+    {% if stats.get('best_model') %}
+    {% set best = stats.get('model_results', {}).get(stats.get('best_model', ''), {}) %}
+    {% set cm = stats.get('best_model_confusion_matrix', [[0,0],[0,0]]) %}
+    <div class="info-card">
+        <div class="info-card-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
+            <h3>Best Model: {{ stats.get('best_model', 'N/A') }}</h3>
+        </div>
+        {% if best %}
+        <div class="metrics-grid">
+            <div class="metric">
+                <span class="metric-value">{{ (best.get('accuracy', 0) * 100)|round(1) }}%</span>
+                <span class="metric-label">Test Accuracy</span>
+            </div>
+            <div class="metric">
+                <span class="metric-value">{{ (best.get('precision', 0) * 100)|round(1) }}%</span>
+                <span class="metric-label">Precision</span>
+            </div>
+            <div class="metric">
+                <span class="metric-value">{{ (best.get('recall', 0) * 100)|round(1) }}%</span>
+                <span class="metric-label">Recall</span>
+            </div>
+            <div class="metric">
+                <span class="metric-value">{{ (best.get('f1_score', 0) * 100)|round(1) }}%</span>
+                <span class="metric-label">F1 Score</span>
+            </div>
+            <div class="metric">
+                <span class="metric-value">{{ (best.get('roc_auc', 0) * 100)|round(1) }}%</span>
+                <span class="metric-label">ROC AUC (Test)</span>
+            </div>
+            {% if best.get('cv_roc_auc_mean') is not none %}
+            <div class="metric">
+                <span class="metric-value">{{ (best.get('cv_roc_auc_mean', 0) * 100)|round(1) }}% ± {{ (best.get('cv_roc_auc_std', 0) * 100)|round(1) }}</span>
+                <span class="metric-label">ROC AUC (5-Fold CV)</span>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="chart-row">
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3>ROC Curve — {{ stats.get('best_model', 'Best Model') }}</h3>
+                <span class="chart-badge">Held-out Test</span>
+            </div>
+            <div id="rocChart" class="chart-body"></div>
+            <div id="rocChartError" class="chart-error hidden"></div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3>Confusion Matrix — Test Set</h3>
+                <span class="chart-badge">n = 1,409</span>
+            </div>
+            <div class="confusion-matrix-visual">
+                <table class="cm-table">
+                    <tr>
+                        <td class="cm-empty"></td>
+                        <td class="cm-header">Predicted: Retained</td>
+                        <td class="cm-header">Predicted: Churned</td>
+                    </tr>
+                    <tr>
+                        <td class="cm-header">Actual: Retained</td>
+                        <td class="cm-cell tn">{{ cm[0][0] }}<br><small>True Negative</small></td>
+                        <td class="cm-cell fp">{{ cm[0][1] }}<br><small>False Positive</small></td>
+                    </tr>
+                    <tr>
+                        <td class="cm-header">Actual: Churned</td>
+                        <td class="cm-cell fn">{{ cm[1][0] }}<br><small>False Negative</small></td>
+                        <td class="cm-cell tp">{{ cm[1][1] }}<br><small>True Positive</small></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% if stats.get('model_results') %}
+    <div class="info-card">
+        <div class="info-card-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            </svg>
+            <h3>Model Validation — Cross-Validation vs Test Scores</h3>
+        </div>
+        {% set v = stats.get('validation', {}) %}
+        <p class="section-lead">
+            {{ v.get('train_test_split', '80/20') }} stratified split · {{ v.get('cv_folds', 5) }}-fold CV ·
+            Imbalance handling: <strong>{{ v.get('imbalance_method', 'class_weight') }}</strong> ·
+            random_state={{ v.get('random_state', 42) }}
+        </p>
+        <div class="table-container validation-table-wrap">
+            <table class="data-table validation-table">
+                <thead>
+                    <tr>
+                        <th>Model</th>
+                        <th>CV ROC AUC (mean ± std)</th>
+                        <th>Test ROC AUC</th>
+                        <th>Test F1</th>
+                        <th>Test Accuracy</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for name, r in stats.model_results.items() %}
+                    <tr class="{{ 'highlight-row' if name == stats.get('best_model') else '' }}">
+                        <td><strong>{{ name }}</strong></td>
+                        <td>{% if r.get('cv_roc_auc_mean') is not none %}{{ (r.get('cv_roc_auc_mean', 0) * 100)|round(2) }}% ± {{ (r.get('cv_roc_auc_std', 0) * 100)|round(2) }}%{% else %}—{% endif %}</td>
+                        <td>{{ (r.get('roc_auc', 0) * 100)|round(2) }}%</td>
+                        <td>{{ (r.get('f1_score', 0) * 100)|round(2) }}%</td>
+                        <td>{{ (r.get('accuracy', 0) * 100)|round(2) }}%</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.kpi-value').forEach(function (el) {
+            var target = parseFloat(el.dataset.target);
+            var prefix = el.dataset.prefix || '';
+            var suffix = el.dataset.suffix || '';
+            var duration = 1500;
+            var start = Date.now();
+            var isFloat = target % 1 !== 0;
+
+            function animate() {
+                var elapsed = Date.now() - start;
+                var progress = Math.min(elapsed / duration, 1);
+                var eased = 1 - Math.pow(1 - progress, 3);
+                var current = target * eased;
+                el.textContent = prefix + (isFloat ? current.toFixed(1) : Math.floor(current).toLocaleString()) + suffix;
+                if (progress < 1) requestAnimationFrame(animate);
+            }
+            animate();
+        });
+
+        function fetchChart(url) {
+            return fetch(url).then(function (r) {
+                if (!r.ok) return r.json().then(function (e) { throw new Error(e.error || 'Request failed'); });
+                return r.json();
+            });
+        }
+
+        function showChartError(containerId, message, retryFn) {
+            var el = document.getElementById(containerId);
+            if (!el) return;
+            el.classList.remove('hidden');
+            el.innerHTML = '<p>' + message + '</p><button type="button" class="page-btn retry-btn">Retry</button>';
+            el.querySelector('.retry-btn').addEventListener('click', retryFn);
+        }
+
+        function renderDashboardCharts() {
+            var colors = ChurnGuardTheme.getChartColors();
+            var layout = ChurnGuardTheme.getPlotlyLayout;
+
+            fetchChart('/api/chart-data/churn_distribution')
+                .then(function (data) {
+                    Plotly.newPlot('churnPieChart', [{
+                        values: data.values,
+                        labels: data.labels,
+                        type: 'pie',
+                        hole: 0.55,
+                        marker: { colors: [colors.retained, colors.churned] },
+                        textinfo: 'label+percent',
+                        textfont: { color: colors.onAccent, size: 13 }
+                    }], layout({ margin: { t: 10, b: 10, l: 10, r: 10 }, showlegend: false }),
+                    { responsive: true, displayModeBar: false });
+                }).catch(function (e) {
+                    showChartError('churnPieChart', e.message, renderDashboardCharts);
+                });
+
+            fetchChart('/api/chart-data/contract_churn')
+                .then(function (data) {
+                    Plotly.newPlot('contractChart', [
+                        { x: data.labels, y: data.churn_no, name: 'Retained', type: 'bar', marker: { color: colors.retained, cornerradius: 4 } },
+                        { x: data.labels, y: data.churn_yes, name: 'Churned', type: 'bar', marker: { color: colors.churned, cornerradius: 4 } }
+                    ], layout({ barmode: 'group', legend: { orientation: 'h', y: 1.1, font: { size: 11, color: colors.font } } }),
+                    { responsive: true, displayModeBar: false });
+                }).catch(function (e) {
+                    showChartError('contractChart', e.message, renderDashboardCharts);
+                });
+
+            fetchChart('/api/chart-data/model_comparison')
+                .then(function (data) {
+                    if (data.error) throw new Error(data.error);
+                    var metrics = ['accuracy', 'precision', 'recall', 'f1_score', 'roc_auc'];
+                    var traces = metrics.map(function (m, i) {
+                        return {
+                            x: data.models,
+                            y: data[m].map(function (v) { return v * 100; }),
+                            name: m.replace('_', ' ').toUpperCase(),
+                            type: 'bar',
+                            marker: { color: colors.palette[i], cornerradius: 3 }
+                        };
+                    });
+                    Plotly.newPlot('modelComparisonChart', traces, layout({
+                        barmode: 'group',
+                        yaxis: { gridcolor: colors.grid, color: colors.font, title: 'Score (%)' },
+                        legend: { orientation: 'h', y: 1.12, font: { size: 10, color: colors.font } }
+                    }), { responsive: true, displayModeBar: false });
+                }).catch(function (e) {
+                    showChartError('modelComparisonChart', e.message, renderDashboardCharts);
+                });
+
+            fetchChart('/api/chart-data/roc_curve')
+                .then(function (data) {
+                    document.getElementById('rocChartError').classList.add('hidden');
+                    Plotly.newPlot('rocChart', [
+                        {
+                            x: data.fpr, y: data.tpr, type: 'scatter', mode: 'lines',
+                            name: data.model || 'Best Model',
+                            line: { color: colors.primary, width: 3 }
+                        },
+                        {
+                            x: [0, 1], y: [0, 1], type: 'scatter', mode: 'lines',
+                            name: 'Random (AUC = 0.5)',
+                            line: { color: colors.font, dash: 'dash', width: 1 }
+                        }
+                    ], layout({
+                        margin: { t: 10, b: 40, l: 50, r: 10 },
+                        xaxis: { title: 'False Positive Rate', gridcolor: colors.grid, color: colors.font },
+                        yaxis: { title: 'True Positive Rate', gridcolor: colors.grid, color: colors.font },
+                        legend: { orientation: 'h', y: 1.15, font: { color: colors.font } }
+                    }), { responsive: true, displayModeBar: false });
+                }).catch(function (e) {
+                    showChartError('rocChartError', e.message, renderDashboardCharts);
+                });
+        }
+
+        renderDashboardCharts();
+        ChurnGuardTheme.onThemeChange(renderDashboardCharts);
+    });
+</script>
+{% endblock %}

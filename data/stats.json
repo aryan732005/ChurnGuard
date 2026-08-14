@@ -1,0 +1,1350 @@
+{
+  "total_customers": 7043,
+  "churn_count": 2103,
+  "no_churn_count": 4940,
+  "churn_rate": 29.86,
+  "avg_tenure": 35.89,
+  "avg_monthly_charges": 53.59,
+  "features": [
+    "customerID",
+    "gender",
+    "SeniorCitizen",
+    "Partner",
+    "Dependents",
+    "tenure",
+    "PhoneService",
+    "MultipleLines",
+    "InternetService",
+    "OnlineSecurity",
+    "OnlineBackup",
+    "DeviceProtection",
+    "TechSupport",
+    "StreamingTV",
+    "StreamingMovies",
+    "Contract",
+    "PaperlessBilling",
+    "PaymentMethod",
+    "MonthlyCharges",
+    "TotalCharges",
+    "Churn",
+    "avg_charge_per_month",
+    "charge_delta",
+    "tenure_bucket",
+    "tenure_short",
+    "tenure_long",
+    "service_count",
+    "is_auto_pay",
+    "contract_month_to_month",
+    "contract_x_electronic_check"
+  ],
+  "gender_distribution": {
+    "Male": 3618,
+    "Female": 3425
+  },
+  "contract_distribution": {
+    "Month-to-month": 3896,
+    "Two year": 1670,
+    "One year": 1477
+  },
+  "internet_service_distribution": {
+    "Fiber optic": 3127,
+    "DSL": 2360,
+    "No": 1556
+  },
+  "payment_method_distribution": {
+    "Electronic check": 2358,
+    "Mailed check": 1636,
+    "Bank transfer (automatic)": 1540,
+    "Credit card (automatic)": 1509
+  },
+  "churn_definition": "Churn = \"Yes\" when the customer cancelled or did not renew their subscription within the observation window ending at the dataset snapshot date.",
+  "churn_window_justification": "The Telco benchmark uses a binary Churn column with no separate cancellation timestamp; we treat the label as churn within ~30 days of the snapshot \u2014 the standard IBM Telco definition \u2014 because longer windows would mix voluntary churn with natural contract expiry.",
+  "temporal_limitation": "This dataset is a cross-sectional snapshot with no per-customer event timestamps. Features reflect account state at snapshot time only; we cannot enforce true point-in-time feature windows per customer. Temporal validation would require event-level data (signup, billing, cancellation dates).",
+  "leakage_audit": {
+    "features": [
+      {
+        "feature": "Churn",
+        "status": "target_only",
+        "risk": "none",
+        "reason": "Label column \u2014 never used as a model input."
+      },
+      {
+        "feature": "Contract",
+        "status": "kept",
+        "risk": "none",
+        "reason": "Active contract type at snapshot \u2014 not a post-cancellation field."
+      },
+      {
+        "feature": "Dependents",
+        "status": "kept",
+        "risk": "none",
+        "reason": "Household attribute at snapshot."
+      },
+      {
+        "feature": "DeviceProtection",
+        "status": "kept",
+        "risk": "none",
+        "reason": "Add-on service at snapshot."
+      },
+      {
+        "feature": "InternetService",
+        "status": "kept",
+        "risk": "none",
+        "reason": "Service subscription state at snapshot."
+      },
+      {
+        "feature": "MonthlyCharges",
+        "status": "kept",
+        "risk": "none",
+        "reason": "Current billing rate at snapshot \u2014 pre-decision."
+      },
+      {
+        "feature": "MultipleLines",
+        "status": "kept",
+        "risk": "none",
+        "reason": "Phone add-on at snapshot."
+      },
+      {
+        "feature": "OnlineBackup",
+        "status": "kept",
+        "risk": "none",
+        "reason": "Add-on service at snapshot."
+      },
+      {
+        "feature": "OnlineSecurity",
+        "status": "kept",
+        "risk": "none",
+        "reason": "Add-on service flags reflect subscription at snapshot, not post-churn tickets."
+      },
+      {
+        "feature": "PaperlessBilling",
+        "status": "kept",
+        "risk": "none",
+        "reason": "Billing preference at snapshot."
+      },
+      {
+        "feature": "Partner",
+        "status": "kept",
+        "risk": "none",
+        "reason": "Household attribute at snapshot."
+      },
+      {
+        "feature": "PaymentMethod",
+        "status": "kept",
+        "risk": "none",
+        "reason": "Payment method at snapshot."
+      },
+      {
+        "feature": "PhoneService",
+        "status": "kept",
+        "risk": "none",
+        "reason": "Service subscription state at snapshot."
+      },
+      {
+        "feature": "SeniorCitizen",
+        "status": "kept",
+        "risk": "none",
+        "reason": "Static demographic."
+      },
+      {
+        "feature": "StreamingMovies",
+        "status": "kept",
+        "risk": "none",
+        "reason": "Add-on service at snapshot."
+      },
+      {
+        "feature": "StreamingTV",
+        "status": "kept",
+        "risk": "none",
+        "reason": "Add-on service at snapshot."
+      },
+      {
+        "feature": "TechSupport",
+        "status": "kept",
+        "risk": "none",
+        "reason": "Add-on service at snapshot \u2014 not cancellation support tickets (not in schema)."
+      },
+      {
+        "feature": "TotalCharges",
+        "status": "kept_with_review",
+        "risk": "low",
+        "reason": "Cumulative billing at snapshot date. Not post-churn activity, but highly correlated with tenure \u00d7 MonthlyCharges. Kept as monetary signal; engineered avg_charge_per_month reduces redundancy."
+      },
+      {
+        "feature": "customerID",
+        "status": "dropped",
+        "risk": "none",
+        "reason": "Identifier only \u2014 no predictive value; excluded from training."
+      },
+      {
+        "feature": "gender",
+        "status": "kept",
+        "risk": "none",
+        "reason": "Static demographic \u2014 used for fairness audit only in reporting."
+      },
+      {
+        "feature": "tenure",
+        "status": "kept",
+        "risk": "none",
+        "reason": "Months as customer at snapshot \u2014 known before any churn decision."
+      }
+    ],
+    "dropped": [
+      "customerID"
+    ],
+    "flagged": [],
+    "absent_checked": [
+      "cancellation_support_tickets",
+      "post_churn_activity_flag",
+      "account_closed_date",
+      "refund_amount",
+      "final_bill_issued",
+      "days_since_last_login_after_cancel"
+    ],
+    "summary": "Reviewed 21 columns. Dropped 1 (customerID). Flagged for review: 0. No post-churn activity fields found in schema.",
+    "plain_language": "We checked every input column against common leakage patterns (cancellation tickets, post-churn flags, future-dated activity). This Telco snapshot contains only account state at observation time. customerID was removed; TotalCharges was reviewed and kept with an engineered alternative. The dataset has no event timestamps, so true point-in-time windows per customer cannot be verified."
+  },
+  "data_integrity_note": "We checked every input column against common leakage patterns (cancellation tickets, post-churn flags, future-dated activity). This Telco snapshot contains only account state at observation time. customerID was removed; TotalCharges was reviewed and kept with an engineered alternative. The dataset has no event timestamps, so true point-in-time windows per customer cannot be verified.",
+  "explainability_note": "SHAP values and coefficient attributions describe how the model uses each feature for this prediction \u2014 they do not prove that changing a feature will cause churn to decrease. Recommended actions are heuristic retention plays, not causal guarantees.",
+  "dataset": {
+    "name": "Telco Customer Churn",
+    "source_label": "IBM Telco Customer Churn (public benchmark CSV at data/telco_churn.csv)",
+    "records": 7043,
+    "is_production_data": false,
+    "status": "prototype \u2014 public benchmark data, not live CRM"
+  },
+  "validation": {
+    "random_state": 42,
+    "train_test_split": "80/20 stratified",
+    "cv_folds": 5,
+    "validation_strategy": "stratified_k_fold",
+    "validation_justification": "The Telco dataset has no event timestamp, so time-based splitting is not applicable. We use an 80/20 stratified hold-out split to preserve churn prevalence, plus 5-fold stratified cross-validation on the training fold for model selection and hyperparameter tuning.",
+    "has_time_column": false,
+    "temporal_correctness": "This dataset is a cross-sectional snapshot with no per-customer event timestamps. Features reflect account state at snapshot time only; we cannot enforce true point-in-time feature windows per customer. Temporal validation would require event-level data (signup, billing, cancellation dates).",
+    "imbalance_method": "class_weight",
+    "imbalance_rationale": "The dataset is imbalanced (~70% retained / ~30% churned). We apply class-weighting during training (sklearn class_weight=\"balanced\" or equivalent sample weights) rather than SMOTE, because it is simpler to explain, avoids synthetic samples, and never touches the held-out test set.",
+    "class_distribution": {
+      "retained_pct": 70.14,
+      "churned_pct": 29.86
+    },
+    "reproducibility_note": "All experiments use random_state=42 for data generation, train/test splits, cross-validation folds, and model initialisation."
+  },
+  "calibration": {
+    "before": {
+      "predicted_mean": [
+        0.0868,
+        0.1571,
+        0.2284,
+        0.3008,
+        0.3924,
+        0.4821,
+        0.585,
+        0.6656,
+        0.757,
+        0.8592
+      ],
+      "observed_rate": [
+        0.0213,
+        0.0284,
+        0.1418,
+        0.156,
+        0.305,
+        0.3071,
+        0.3191,
+        0.4397,
+        0.5532,
+        0.7163
+      ],
+      "n_bins": 10
+    },
+    "after": {
+      "predicted_mean": [
+        0.0169,
+        0.0423,
+        0.1533,
+        0.1721,
+        0.2927,
+        0.3109,
+        0.3465,
+        0.4619,
+        0.6102,
+        0.7889
+      ],
+      "observed_rate": [
+        0.0169,
+        0.0423,
+        0.1533,
+        0.1721,
+        0.2927,
+        0.3109,
+        0.3465,
+        0.4619,
+        0.6102,
+        0.7889
+      ],
+      "n_bins": 10
+    },
+    "brier_before": 0.1906,
+    "brier_after": 0.1602,
+    "roi_note": "ROI estimates multiply predicted probabilities by revenue assumptions. Uncalibrated probabilities systematically over- or under-state expected churners \u2014 use calibrated scores (after isotonic/Platt) for campaign sizing.",
+    "method": "isotonic"
+  },
+  "threshold_optimization": {
+    "optimal_threshold": 0.16,
+    "default_threshold": 0.5,
+    "cost_fp": 15.0,
+    "cost_fn": 1680.0,
+    "expected_cost_at_optimal": 55620.0,
+    "expected_cost_at_default": 381375.0,
+    "precision_at_optimal": 0.4073,
+    "recall_at_optimal": 0.9335,
+    "confusion_at_optimal": [
+      [
+        416,
+        572
+      ],
+      [
+        28,
+        393
+      ]
+    ],
+    "reasoning": "Threshold 0.16 minimises expected cost with FP cost $15 (retention offer) vs FN cost $1680 (lost LTV). At 0.50 default, more false alarms or missed churners would cost more in aggregate.",
+    "cost_curve": [
+      {
+        "threshold": 0.05,
+        "expected_cost": 22080.0
+      },
+      {
+        "threshold": 0.09,
+        "expected_cost": 22080.0
+      },
+      {
+        "threshold": 0.13,
+        "expected_cost": 22080.0
+      },
+      {
+        "threshold": 0.17,
+        "expected_cost": 58830.0
+      },
+      {
+        "threshold": 0.21,
+        "expected_cost": 89385.0
+      },
+      {
+        "threshold": 0.25,
+        "expected_cost": 89385.0
+      },
+      {
+        "threshold": 0.29,
+        "expected_cost": 95955.0
+      },
+      {
+        "threshold": 0.33,
+        "expected_cost": 248940.0
+      },
+      {
+        "threshold": 0.37,
+        "expected_cost": 306750.0
+      },
+      {
+        "threshold": 0.41,
+        "expected_cost": 351510.0
+      },
+      {
+        "threshold": 0.45,
+        "expected_cost": 381375.0
+      },
+      {
+        "threshold": 0.49,
+        "expected_cost": 381375.0
+      },
+      {
+        "threshold": 0.53,
+        "expected_cost": 509670.0
+      },
+      {
+        "threshold": 0.57,
+        "expected_cost": 509670.0
+      },
+      {
+        "threshold": 0.61,
+        "expected_cost": 509670.0
+      },
+      {
+        "threshold": 0.65,
+        "expected_cost": 509670.0
+      },
+      {
+        "threshold": 0.69,
+        "expected_cost": 588285.0
+      },
+      {
+        "threshold": 0.73,
+        "expected_cost": 650220.0
+      },
+      {
+        "threshold": 0.77,
+        "expected_cost": 650220.0
+      },
+      {
+        "threshold": 0.81,
+        "expected_cost": 656925.0
+      },
+      {
+        "threshold": 0.85,
+        "expected_cost": 673695.0
+      },
+      {
+        "threshold": 0.89,
+        "expected_cost": 683760.0
+      },
+      {
+        "threshold": 0.93,
+        "expected_cost": 683760.0
+      }
+    ],
+    "roi_alignment_note": "Dashboard ROI calculator uses the same FP cost (offer) and FN cost (LTV) assumptions. Campaign targeting should use this threshold, not 0.50."
+  },
+  "variance": {
+    "seeds": [
+      11,
+      22,
+      33,
+      42,
+      55
+    ],
+    "n_runs": 5,
+    "metrics": {
+      "accuracy": {
+        "mean": 0.6967,
+        "std": 0.0078,
+        "values": [
+          0.6863,
+          0.6927,
+          0.7012,
+          0.6941,
+          0.709
+        ]
+      },
+      "precision": {
+        "mean": 0.4949,
+        "std": 0.0089,
+        "values": [
+          0.4834,
+          0.4899,
+          0.5,
+          0.4919,
+          0.5093
+        ]
+      },
+      "recall": {
+        "mean": 0.7159,
+        "std": 0.0122,
+        "values": [
+          0.7268,
+          0.6936,
+          0.7268,
+          0.7173,
+          0.715
+        ]
+      },
+      "f1_score": {
+        "mean": 0.5852,
+        "std": 0.0076,
+        "values": [
+          0.5806,
+          0.5742,
+          0.5924,
+          0.5836,
+          0.5949
+        ]
+      },
+      "roc_auc": {
+        "mean": 0.7796,
+        "std": 0.0075,
+        "values": [
+          0.7787,
+          0.7667,
+          0.7783,
+          0.7869,
+          0.7875
+        ]
+      },
+      "pr_auc": {
+        "mean": 0.579,
+        "std": 0.0195,
+        "values": [
+          0.5733,
+          0.5598,
+          0.5626,
+          0.6133,
+          0.586
+        ]
+      }
+    },
+    "note": "Metrics reported as mean \u00b1 std over 5 stratified hold-out splits (different random seeds). Complements single-split test metrics and 5-fold CV."
+  },
+  "best_model_at_optimal_threshold": {
+    "accuracy": 0.5742,
+    "precision": 0.4073,
+    "recall": 0.9335,
+    "f1_score": 0.5671,
+    "roc_auc": 0.7934,
+    "pr_auc": 0.6076,
+    "confusion_matrix": [
+      [
+        416,
+        572
+      ],
+      [
+        28,
+        393
+      ]
+    ],
+    "per_class": {
+      "retained": {
+        "precision": 0.9369,
+        "recall": 0.4211,
+        "f1_score": 0.581,
+        "support": 988
+      },
+      "churned": {
+        "precision": 0.4073,
+        "recall": 0.9335,
+        "f1_score": 0.5671,
+        "support": 421
+      }
+    }
+  },
+  "fairness": {
+    "gender": {
+      "Female": {
+        "count": 675,
+        "accuracy": 0.5585,
+        "f1_score": 0.5387,
+        "error_rate": 0.4415
+      },
+      "Male": {
+        "count": 734,
+        "accuracy": 0.5886,
+        "f1_score": 0.5919,
+        "error_rate": 0.4114
+      }
+    },
+    "senior_citizen": {
+      "Non-Senior": {
+        "count": 1185,
+        "accuracy": 0.5671,
+        "f1_score": 0.5597,
+        "error_rate": 0.4329
+      },
+      "Senior": {
+        "count": 224,
+        "accuracy": 0.6116,
+        "f1_score": 0.6063,
+        "error_rate": 0.3884
+      }
+    },
+    "contract": {
+      "Month-to-month": {
+        "count": 795,
+        "accuracy": 0.4541,
+        "f1_score": 0.6083,
+        "error_rate": 0.5459
+      },
+      "One year": {
+        "count": 281,
+        "accuracy": 0.726,
+        "f1_score": 0.438,
+        "error_rate": 0.274
+      },
+      "Two year": {
+        "count": 333,
+        "accuracy": 0.7327,
+        "f1_score": 0.3688,
+        "error_rate": 0.2673
+      }
+    },
+    "note": "Basic fairness audit on held-out test data. Compares accuracy and F1 across gender and senior-citizen groups. This is illustrative, not exhaustive."
+  },
+  "roc_curve": {
+    "fpr": [
+      0.0,
+      0.0,
+      0.001,
+      0.003,
+      0.004,
+      0.0192,
+      0.0425,
+      0.0658,
+      0.1144,
+      0.1397,
+      0.1802,
+      0.1923,
+      0.2146,
+      0.247,
+      0.2885,
+      0.33,
+      0.4666,
+      0.4767,
+      0.4808,
+      0.5688,
+      0.5789,
+      0.6761,
+      0.6964,
+      0.7652,
+      0.8765,
+      0.999,
+      1.0
+    ],
+    "tpr": [
+      0.0,
+      0.0333,
+      0.0475,
+      0.0713,
+      0.0808,
+      0.1686,
+      0.2803,
+      0.3397,
+      0.4632,
+      0.5059,
+      0.5701,
+      0.5867,
+      0.6152,
+      0.6532,
+      0.6983,
+      0.7411,
+      0.8741,
+      0.8836,
+      0.886,
+      0.9287,
+      0.9335,
+      0.9762,
+      0.9834,
+      0.9905,
+      0.9952,
+      1.0,
+      1.0
+    ],
+    "model": "Logistic Regression (Tuned)"
+  },
+  "pr_curve": {
+    "precision": [
+      0.2988,
+      0.299,
+      0.3261,
+      0.3555,
+      0.3757,
+      0.3809,
+      0.4073,
+      0.4103,
+      0.4399,
+      0.4413,
+      0.4439,
+      0.489,
+      0.5078,
+      0.5299,
+      0.5499,
+      0.5652,
+      0.5742,
+      0.6068,
+      0.6331,
+      0.6875,
+      0.7375,
+      0.7889,
+      0.8947,
+      0.9091,
+      0.9524,
+      1.0,
+      1.0
+    ],
+    "recall": [
+      1.0,
+      1.0,
+      0.9952,
+      0.9905,
+      0.9834,
+      0.9762,
+      0.9335,
+      0.9287,
+      0.886,
+      0.8836,
+      0.8741,
+      0.7411,
+      0.6983,
+      0.6532,
+      0.6152,
+      0.5867,
+      0.5701,
+      0.5059,
+      0.4632,
+      0.3397,
+      0.2803,
+      0.1686,
+      0.0808,
+      0.0713,
+      0.0475,
+      0.0333,
+      0.0
+    ],
+    "pr_auc": 0.6076
+  },
+  "drift_monitoring": {
+    "reference_saved": true,
+    "features_monitored": [
+      "tenure",
+      "MonthlyCharges",
+      "TotalCharges",
+      "avg_charge_per_month",
+      "service_count",
+      "Contract",
+      "PaymentMethod",
+      "InternetService"
+    ],
+    "production_note": "Batch uploads are compared to this training profile via PSI/KS. Amber/red drift would trigger investigation and retrain in production."
+  },
+  "model_results": {
+    "Baseline (Majority Class)": {
+      "accuracy": 0.7012,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1_score": 0.0,
+      "roc_auc": 0.5,
+      "pr_auc": 0.2988,
+      "confusion_matrix": [
+        [
+          988,
+          0
+        ],
+        [
+          421,
+          0
+        ]
+      ],
+      "per_class": {
+        "retained": {
+          "precision": 0.7012,
+          "recall": 1.0,
+          "f1_score": 0.8244,
+          "support": 988
+        },
+        "churned": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0,
+          "support": 421
+        }
+      },
+      "cv_accuracy_mean": 0.7015,
+      "cv_accuracy_std": 0.0004,
+      "cv_precision_mean": 0.0,
+      "cv_precision_std": 0.0,
+      "cv_recall_mean": 0.0,
+      "cv_recall_std": 0.0,
+      "cv_f1_mean": 0.0,
+      "cv_f1_std": 0.0,
+      "cv_roc_auc_mean": 0.5,
+      "cv_roc_auc_std": 0.0,
+      "cv_pr_auc_mean": 0.2985,
+      "cv_pr_auc_std": 0.0004
+    },
+    "Random Forest": {
+      "accuracy": 0.7168,
+      "precision": 0.5232,
+      "recall": 0.5891,
+      "f1_score": 0.5542,
+      "roc_auc": 0.7716,
+      "pr_auc": 0.5788,
+      "confusion_matrix": [
+        [
+          762,
+          226
+        ],
+        [
+          173,
+          248
+        ]
+      ],
+      "per_class": {
+        "retained": {
+          "precision": 0.815,
+          "recall": 0.7713,
+          "f1_score": 0.7925,
+          "support": 988
+        },
+        "churned": {
+          "precision": 0.5232,
+          "recall": 0.5891,
+          "f1_score": 0.5542,
+          "support": 421
+        }
+      },
+      "cv_accuracy_mean": 0.7148,
+      "cv_accuracy_std": 0.0058,
+      "cv_precision_mean": 0.5215,
+      "cv_precision_std": 0.009,
+      "cv_recall_mean": 0.5422,
+      "cv_recall_std": 0.0119,
+      "cv_f1_mean": 0.5316,
+      "cv_f1_std": 0.0094,
+      "cv_roc_auc_mean": 0.7667,
+      "cv_roc_auc_std": 0.0084,
+      "cv_pr_auc_mean": 0.5601,
+      "cv_pr_auc_std": 0.0144
+    },
+    "Gradient Boosting": {
+      "accuracy": 0.6984,
+      "precision": 0.4966,
+      "recall": 0.6983,
+      "f1_score": 0.5805,
+      "roc_auc": 0.7761,
+      "pr_auc": 0.5713,
+      "confusion_matrix": [
+        [
+          690,
+          298
+        ],
+        [
+          127,
+          294
+        ]
+      ],
+      "per_class": {
+        "retained": {
+          "precision": 0.8446,
+          "recall": 0.6984,
+          "f1_score": 0.7645,
+          "support": 988
+        },
+        "churned": {
+          "precision": 0.4966,
+          "recall": 0.6983,
+          "f1_score": 0.5805,
+          "support": 421
+        }
+      },
+      "cv_accuracy_mean": 0.6917,
+      "cv_accuracy_std": 0.0093,
+      "cv_precision_mean": 0.4878,
+      "cv_precision_std": 0.0116,
+      "cv_recall_mean": 0.6492,
+      "cv_recall_std": 0.0191,
+      "cv_f1_mean": 0.557,
+      "cv_f1_std": 0.0134,
+      "cv_roc_auc_mean": 0.7538,
+      "cv_roc_auc_std": 0.0075,
+      "cv_pr_auc_mean": 0.5365,
+      "cv_pr_auc_std": 0.0096
+    },
+    "Logistic Regression": {
+      "accuracy": 0.6941,
+      "precision": 0.4919,
+      "recall": 0.7221,
+      "f1_score": 0.5852,
+      "roc_auc": 0.7863,
+      "pr_auc": 0.6114,
+      "confusion_matrix": [
+        [
+          674,
+          314
+        ],
+        [
+          117,
+          304
+        ]
+      ],
+      "per_class": {
+        "retained": {
+          "precision": 0.8521,
+          "recall": 0.6822,
+          "f1_score": 0.7577,
+          "support": 988
+        },
+        "churned": {
+          "precision": 0.4919,
+          "recall": 0.7221,
+          "f1_score": 0.5852,
+          "support": 421
+        }
+      },
+      "cv_accuracy_mean": 0.7061,
+      "cv_accuracy_std": 0.0082,
+      "cv_precision_mean": 0.5054,
+      "cv_precision_std": 0.0097,
+      "cv_recall_mean": 0.7355,
+      "cv_recall_std": 0.0235,
+      "cv_f1_mean": 0.599,
+      "cv_f1_std": 0.0119,
+      "cv_roc_auc_mean": 0.7869,
+      "cv_roc_auc_std": 0.0089,
+      "cv_pr_auc_mean": 0.5814,
+      "cv_pr_auc_std": 0.0222
+    },
+    "Logistic Regression (Tuned)": {
+      "accuracy": 0.6941,
+      "precision": 0.4919,
+      "recall": 0.7173,
+      "f1_score": 0.5836,
+      "roc_auc": 0.7869,
+      "pr_auc": 0.6133,
+      "confusion_matrix": [
+        [
+          676,
+          312
+        ],
+        [
+          119,
+          302
+        ]
+      ],
+      "per_class": {
+        "retained": {
+          "precision": 0.8503,
+          "recall": 0.6842,
+          "f1_score": 0.7583,
+          "support": 988
+        },
+        "churned": {
+          "precision": 0.4919,
+          "recall": 0.7173,
+          "f1_score": 0.5836,
+          "support": 421
+        }
+      },
+      "cv_accuracy_mean": 0.7071,
+      "cv_accuracy_std": 0.0068,
+      "cv_precision_mean": 0.5066,
+      "cv_precision_std": 0.008,
+      "cv_recall_mean": 0.7331,
+      "cv_recall_std": 0.0238,
+      "cv_f1_mean": 0.599,
+      "cv_f1_std": 0.0114,
+      "cv_roc_auc_mean": 0.7875,
+      "cv_roc_auc_std": 0.0095,
+      "cv_pr_auc_mean": 0.5817,
+      "cv_pr_auc_std": 0.0224
+    }
+  },
+  "best_model": "Logistic Regression (Tuned)",
+  "best_model_params": {
+    "C": 0.01,
+    "solver": "lbfgs",
+    "best_cv_roc_auc": 0.7875
+  },
+  "top_features": [
+    {
+      "feature": "contract_month_to_month",
+      "importance": 0.5233
+    },
+    {
+      "feature": "Contract_Two year",
+      "importance": 0.3656
+    },
+    {
+      "feature": "InternetService_Fiber optic",
+      "importance": 0.2687
+    },
+    {
+      "feature": "Contract_One year",
+      "importance": 0.257
+    },
+    {
+      "feature": "tenure_short",
+      "importance": 0.2373
+    },
+    {
+      "feature": "OnlineSecurity_Yes",
+      "importance": 0.201
+    },
+    {
+      "feature": "tenure_bucket_49-72",
+      "importance": 0.1404
+    },
+    {
+      "feature": "tenure_long",
+      "importance": 0.1404
+    },
+    {
+      "feature": "tenure",
+      "importance": 0.1333
+    },
+    {
+      "feature": "PaymentMethod_Electronic check",
+      "importance": 0.1322
+    },
+    {
+      "feature": "TechSupport_Yes",
+      "importance": 0.1319
+    },
+    {
+      "feature": "MonthlyCharges",
+      "importance": 0.0967
+    },
+    {
+      "feature": "avg_charge_per_month",
+      "importance": 0.0939
+    },
+    {
+      "feature": "service_count",
+      "importance": 0.0846
+    },
+    {
+      "feature": "SeniorCitizen",
+      "importance": 0.0751
+    }
+  ],
+  "best_model_confusion_matrix": [
+    [
+      416,
+      572
+    ],
+    [
+      28,
+      393
+    ]
+  ],
+  "best_model_per_class": {
+    "retained": {
+      "precision": 0.9369,
+      "recall": 0.4211,
+      "f1_score": 0.581,
+      "support": 988
+    },
+    "churned": {
+      "precision": 0.4073,
+      "recall": 0.9335,
+      "f1_score": 0.5671,
+      "support": 421
+    }
+  },
+  "error_analysis": [
+    {
+      "case_type": "false_positive",
+      "customer_id": "5968-MCOMV",
+      "true_label": "Retained",
+      "predicted_label": "Churned",
+      "probability": 85.7,
+      "attributes": {
+        "contract": "Month-to-month",
+        "tenure": 9,
+        "monthly_charges": 80.44,
+        "internet_service": "Fiber optic",
+        "payment_method": "Electronic check"
+      },
+      "shap_factors": [
+        {
+          "feature": "tenure short",
+          "impact": 0.5181
+        },
+        {
+          "feature": "contract month to month",
+          "impact": 0.4703
+        },
+        {
+          "feature": "OnlineSecurity Yes",
+          "impact": -0.3268
+        },
+        {
+          "feature": "InternetService Fiber optic",
+          "impact": 0.3007
+        },
+        {
+          "feature": "Contract Two year",
+          "impact": 0.2038
+        }
+      ],
+      "explanation": "Predicted churn but customer stayed \u2014 month-to-month contract and billing patterns resemble high-risk profiles, yet this account retained."
+    },
+    {
+      "case_type": "false_positive",
+      "customer_id": "5010-JYNOW",
+      "true_label": "Retained",
+      "predicted_label": "Churned",
+      "probability": 83.3,
+      "attributes": {
+        "contract": "Month-to-month",
+        "tenure": 3,
+        "monthly_charges": 76.85,
+        "internet_service": "Fiber optic",
+        "payment_method": "Credit card (automatic)"
+      },
+      "shap_factors": [
+        {
+          "feature": "tenure short",
+          "impact": 0.5181
+        },
+        {
+          "feature": "contract month to month",
+          "impact": 0.4703
+        },
+        {
+          "feature": "InternetService Fiber optic",
+          "impact": 0.3007
+        },
+        {
+          "feature": "tenure",
+          "impact": 0.2097
+        },
+        {
+          "feature": "Contract Two year",
+          "impact": 0.2038
+        }
+      ],
+      "explanation": "Predicted churn but customer stayed \u2014 month-to-month contract and billing patterns resemble high-risk profiles, yet this account retained."
+    },
+    {
+      "case_type": "false_positive",
+      "customer_id": "2453-IMBGP",
+      "true_label": "Retained",
+      "predicted_label": "Churned",
+      "probability": 83.3,
+      "attributes": {
+        "contract": "Month-to-month",
+        "tenure": 0,
+        "monthly_charges": 80.06,
+        "internet_service": "Fiber optic",
+        "payment_method": "Credit card (automatic)"
+      },
+      "shap_factors": [
+        {
+          "feature": "tenure short",
+          "impact": 0.5181
+        },
+        {
+          "feature": "contract month to month",
+          "impact": 0.4703
+        },
+        {
+          "feature": "InternetService Fiber optic",
+          "impact": 0.3007
+        },
+        {
+          "feature": "tenure",
+          "impact": 0.2288
+        },
+        {
+          "feature": "Contract Two year",
+          "impact": 0.2038
+        }
+      ],
+      "explanation": "Predicted churn but customer stayed \u2014 month-to-month contract and billing patterns resemble high-risk profiles, yet this account retained."
+    },
+    {
+      "case_type": "false_negative",
+      "customer_id": "4060-EXVCV",
+      "true_label": "Churned",
+      "predicted_label": "Retained",
+      "probability": 1.6,
+      "attributes": {
+        "contract": "Two year",
+        "tenure": 60,
+        "monthly_charges": 18.25,
+        "internet_service": "No",
+        "payment_method": "Credit card (automatic)"
+      },
+      "shap_factors": [
+        {
+          "feature": "Contract Two year",
+          "impact": -0.6559
+        },
+        {
+          "feature": "contract month to month",
+          "impact": -0.5822
+        },
+        {
+          "feature": "InternetService Fiber optic",
+          "impact": -0.2401
+        },
+        {
+          "feature": "tenure bucket 49-72",
+          "impact": -0.2001
+        },
+        {
+          "feature": "tenure long",
+          "impact": -0.2001
+        }
+      ],
+      "explanation": "Missed churn \u2014 longer tenure (60 mo) looked protective, but contract two year ultimately outweighed loyalty signals."
+    },
+    {
+      "case_type": "false_negative",
+      "customer_id": "4772-QXUZB",
+      "true_label": "Churned",
+      "predicted_label": "Retained",
+      "probability": 1.6,
+      "attributes": {
+        "contract": "Two year",
+        "tenure": 21,
+        "monthly_charges": 18.25,
+        "internet_service": "No",
+        "payment_method": "Mailed check"
+      },
+      "shap_factors": [
+        {
+          "feature": "Contract Two year",
+          "impact": -0.6559
+        },
+        {
+          "feature": "contract month to month",
+          "impact": -0.5822
+        },
+        {
+          "feature": "InternetService Fiber optic",
+          "impact": -0.2401
+        },
+        {
+          "feature": "MonthlyCharges",
+          "impact": -0.1625
+        },
+        {
+          "feature": "avg charge per month",
+          "impact": -0.1341
+        }
+      ],
+      "explanation": "Missed churn \u2014 subtle risk from contract two year was below the decision threshold despite the customer eventually leaving."
+    },
+    {
+      "case_type": "false_negative",
+      "customer_id": "3021-DLXJD",
+      "true_label": "Churned",
+      "predicted_label": "Retained",
+      "probability": 1.8,
+      "attributes": {
+        "contract": "One year",
+        "tenure": 36,
+        "monthly_charges": 27.09,
+        "internet_service": "No",
+        "payment_method": "Credit card (automatic)"
+      },
+      "shap_factors": [
+        {
+          "feature": "contract month to month",
+          "impact": -0.5822
+        },
+        {
+          "feature": "Contract One year",
+          "impact": -0.499
+        },
+        {
+          "feature": "InternetService Fiber optic",
+          "impact": -0.2401
+        },
+        {
+          "feature": "Contract Two year",
+          "impact": 0.2038
+        },
+        {
+          "feature": "OnlineSecurity Yes",
+          "impact": 0.1236
+        }
+      ],
+      "explanation": "Missed churn \u2014 longer tenure (36 mo) looked protective, but contract month to month ultimately outweighed loyalty signals."
+    }
+  ],
+  "business_costs": {
+    "fp_cost": 15.0,
+    "fn_cost": 1680.0,
+    "lifetime_months": 24,
+    "avg_monthly_revenue": 70.0
+  },
+  "business_impact": {
+    "segments": {
+      "5": {
+        "top_pct": 5,
+        "customer_count": 352,
+        "total_customers": 7043,
+        "monthly_revenue_at_risk": 24074.25,
+        "annual_revenue_at_risk": 288891.0
+      },
+      "10": {
+        "top_pct": 10,
+        "customer_count": 704,
+        "total_customers": 7043,
+        "monthly_revenue_at_risk": 47562.08,
+        "annual_revenue_at_risk": 570744.96
+      },
+      "15": {
+        "top_pct": 15,
+        "customer_count": 1056,
+        "total_customers": 7043,
+        "monthly_revenue_at_risk": 69597.33,
+        "annual_revenue_at_risk": 835167.96
+      },
+      "20": {
+        "top_pct": 20,
+        "customer_count": 1408,
+        "total_customers": 7043,
+        "monthly_revenue_at_risk": 91584.91,
+        "annual_revenue_at_risk": 1099018.92
+      },
+      "25": {
+        "top_pct": 25,
+        "customer_count": 1760,
+        "total_customers": 7043,
+        "monthly_revenue_at_risk": 113406.07,
+        "annual_revenue_at_risk": 1360872.84
+      },
+      "30": {
+        "top_pct": 30,
+        "customer_count": 2112,
+        "total_customers": 7043,
+        "monthly_revenue_at_risk": 133180.96,
+        "annual_revenue_at_risk": 1598171.52
+      }
+    },
+    "avg_monthly_charge": 53.59,
+    "note": "Precomputed from model-scored training dataset customers \u2014 not live CRM or production data."
+  },
+  "model_version": {
+    "version": "v4.0",
+    "version_num": 4,
+    "timestamp": "2026-08-14T07:54:09.837755+00:00",
+    "date": "2026-08-14 07:54 UTC",
+    "model_name": "Logistic Regression (Tuned)",
+    "roc_auc": 0.7934,
+    "roc_auc_delta": 0.0,
+    "mlflow_run_id": "e7cf47d8bf444a798f07f381d0cac40d",
+    "history": [
+      {
+        "version": "v1.0",
+        "version_num": 1,
+        "timestamp": "2026-08-12T17:06:45.256637+00:00",
+        "date": "2026-08-12 17:06 UTC",
+        "model_name": "Logistic Regression (Tuned)",
+        "roc_auc": 0.7934,
+        "roc_auc_delta": null,
+        "mlflow_run_id": ""
+      },
+      {
+        "version": "v2.0",
+        "version_num": 2,
+        "timestamp": "2026-08-12T17:07:42.971285+00:00",
+        "date": "2026-08-12 17:07 UTC",
+        "model_name": "Logistic Regression (Tuned)",
+        "roc_auc": 0.7934,
+        "roc_auc_delta": 0.0,
+        "mlflow_run_id": ""
+      },
+      {
+        "version": "v3.0",
+        "version_num": 3,
+        "timestamp": "2026-08-14T07:49:18.670043+00:00",
+        "date": "2026-08-14 07:49 UTC",
+        "model_name": "Logistic Regression (Tuned)",
+        "roc_auc": 0.7934,
+        "roc_auc_delta": 0.0,
+        "mlflow_run_id": ""
+      },
+      {
+        "version": "v4.0",
+        "version_num": 4,
+        "timestamp": "2026-08-14T07:54:09.837755+00:00",
+        "date": "2026-08-14 07:54 UTC",
+        "model_name": "Logistic Regression (Tuned)",
+        "roc_auc": 0.7934,
+        "roc_auc_delta": 0.0,
+        "mlflow_run_id": ""
+      }
+    ]
+  }
+}

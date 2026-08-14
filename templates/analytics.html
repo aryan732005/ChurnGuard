@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+{% block title %}Analytics{% endblock %}
+{% block page_title %}Advanced Analytics{% endblock %}
+
+{% block content %}
+{% set s = stats %}
+{% set best_name = s.get('best_model', '') %}
+{% set best = s.get('model_results', {}).get(best_name, {}) %}
+{% set cm = s.get('best_model_confusion_matrix', [[0,0],[0,0]]) %}
+<div class="analytics-page page-enter">
+
+    <div class="chart-row">
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3>ROC Curve — {{ best_name }}</h3>
+                <span class="chart-badge">AUC {{ (best.get('roc_auc', 0) * 100)|round(1) }}%</span>
+            </div>
+            <div id="analyticsRocChart" class="chart-body chart-tall">
+                <div class="chart-skeleton"></div>
+            </div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3>Confusion Matrix — Test Set</h3>
+                <span class="chart-badge">Heatmap</span>
+            </div>
+            <div id="analyticsCmChart" class="chart-body chart-tall">
+                <div class="chart-skeleton"></div>
+            </div>
+        </div>
+    </div>
+
+    {% if s.get('model_results') %}
+    <div class="info-card reveal">
+        <div class="info-card-header"><h3>Model Performance — Precise Metrics</h3></div>
+        <div class="table-container validation-table-wrap">
+            <table class="data-table validation-table">
+                <thead>
+                    <tr>
+                        <th>Model</th>
+                        <th>Accuracy</th>
+                        <th>Precision</th>
+                        <th>Recall</th>
+                        <th>F1</th>
+                        <th>ROC AUC</th>
+                        <th>CV ROC AUC</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for name, r in s.model_results.items() %}
+                    <tr class="{{ 'highlight-row' if name == best_name else '' }}">
+                        <td><strong>{{ name }}</strong></td>
+                        <td>{{ (r.get('accuracy', 0) * 100)|round(2) }}%</td>
+                        <td>{{ (r.get('precision', 0) * 100)|round(2) }}%</td>
+                        <td>{{ (r.get('recall', 0) * 100)|round(2) }}%</td>
+                        <td>{{ (r.get('f1_score', 0) * 100)|round(2) }}%</td>
+                        <td>{{ (r.get('roc_auc', 0) * 100)|round(2) }}%</td>
+                        <td>{% if r.get('cv_roc_auc_mean') is not none %}{{ (r.get('cv_roc_auc_mean', 0) * 100)|round(2) }}% ± {{ (r.get('cv_roc_auc_std', 0) * 100)|round(2) }}%{% else %}—{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="chart-row">
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3>Feature Importance</h3>
+                <span class="chart-badge">Model Insights</span>
+            </div>
+            <div id="featureImportanceChart" class="chart-body chart-tall"></div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3>Churn by Internet Service</h3>
+                <span class="chart-badge">Service Analysis</span>
+            </div>
+            <div id="internetChart" class="chart-body chart-tall"></div>
+        </div>
+    </div>
+
+    <div class="chart-row">
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3>Churn by Payment Method</h3>
+                <span class="chart-badge">Payment Analysis</span>
+            </div>
+            <div id="paymentChart" class="chart-body chart-tall"></div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3>Tenure Distribution</h3>
+                <span class="chart-badge">Customer Lifecycle</span>
+            </div>
+            <div id="tenureChart" class="chart-body chart-tall"></div>
+        </div>
+    </div>
+
+    <div class="chart-row">
+        <div class="chart-card full-width">
+            <div class="chart-header">
+                <h3>Monthly Charges Analysis</h3>
+                <span class="chart-badge">Revenue Impact</span>
+            </div>
+            <div id="chargesChart" class="chart-body"></div>
+        </div>
+    </div>
+
+    <!-- Key Insights -->
+    <div class="insights-grid">
+        <div class="insight-card">
+            <div class="insight-icon danger">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path
+                        d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                </svg>
+            </div>
+            <h4>High Risk Factor</h4>
+            <p>Month-to-month contracts show the highest churn rates. Consider incentivizing longer-term commitments.
+            </p>
+        </div>
+        <div class="insight-card">
+            <div class="insight-icon warning">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 6v6l4 2" />
+                </svg>
+            </div>
+            <h4>Early Warning</h4>
+            <p>Customers with tenure under 12 months are most likely to churn. Focus onboarding and early engagement.
+            </p>
+        </div>
+        <div class="insight-card">
+            <div class="insight-icon primary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+            </div>
+            <h4>Retention Strategy</h4>
+            <p>Fiber optic users without tech support or online security are high-risk. Bundle these services for
+                retention.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        function fetchChart(url) {
+            return fetch(url).then(function (r) {
+                if (!r.ok) return r.json().then(function (e) { throw new Error(e.error || 'Request failed'); });
+                return r.json();
+            });
+        }
+
+        function renderAnalyticsCharts() {
+            var colors = ChurnGuardTheme.getChartColors();
+            var layout = ChurnGuardTheme.getPlotlyLayout;
+
+            fetchChart('/api/chart-data/feature_importance')
+                .then(function (data) {
+                    if (data.error) return;
+                    var labels = data.labels.slice().reverse();
+                    var values = data.values.slice().reverse();
+                    Plotly.newPlot('featureImportanceChart', [{
+                        y: labels,
+                        x: values,
+                        type: 'bar',
+                        orientation: 'h',
+                        marker: {
+                            color: ChurnGuardTheme.getFeatureImportanceColors(values.length),
+                            cornerradius: 4
+                        }
+                    }], layout({
+                        margin: { t: 10, b: 30, l: 180, r: 20 },
+                        yaxis: { gridcolor: colors.grid, color: colors.font, tickfont: { size: 10, color: colors.font } }
+                    }), { responsive: true, displayModeBar: false });
+                });
+
+            fetchChart('/api/chart-data/internet_service')
+                .then(function (data) {
+                    Plotly.newPlot('internetChart', [
+                        { x: data.labels, y: data.churn_no, name: 'Retained', type: 'bar', marker: { color: colors.retained } },
+                        { x: data.labels, y: data.churn_yes, name: 'Churned', type: 'bar', marker: { color: colors.churned } }
+                    ], layout({ barmode: 'group', legend: { orientation: 'h', y: 1.1, font: { color: colors.font } } }), { responsive: true, displayModeBar: false });
+                });
+
+            fetchChart('/api/chart-data/payment_method')
+                .then(function (data) {
+                    Plotly.newPlot('paymentChart', [
+                        { x: data.labels, y: data.churn_no, name: 'Retained', type: 'bar', marker: { color: colors.retained } },
+                        { x: data.labels, y: data.churn_yes, name: 'Churned', type: 'bar', marker: { color: colors.churned } }
+                    ], layout({
+                        barmode: 'stack',
+                        legend: { orientation: 'h', y: 1.1, font: { color: colors.font } },
+                        xaxis: { gridcolor: colors.grid, color: colors.font, tickangle: -20 }
+                    }), { responsive: true, displayModeBar: false });
+                });
+
+            fetchChart('/api/chart-data/tenure_distribution')
+                .then(function (data) {
+                    Plotly.newPlot('tenureChart', [
+                        { x: data.not_churned, name: 'Retained', type: 'histogram', marker: { color: colors.retained }, opacity: 0.7 },
+                        { x: data.churned, name: 'Churned', type: 'histogram', marker: { color: colors.churned }, opacity: 0.7 }
+                    ], layout({
+                        barmode: 'overlay',
+                        legend: { orientation: 'h', y: 1.1, font: { color: colors.font } },
+                        xaxis: { gridcolor: colors.grid, color: colors.font, title: 'Tenure (months)' }
+                    }), { responsive: true, displayModeBar: false });
+                });
+
+            fetchChart('/api/chart-data/monthly_charges')
+                .then(function (data) {
+                    var categories = ['mean', 'min', '25%', '50%', '75%', 'max'];
+                    var chartLabels = ['Mean', 'Min', 'Q1', 'Median', 'Q3', 'Max'];
+                    Plotly.newPlot('chargesChart', [
+                        { x: chartLabels, y: categories.map(function (c) { return data.not_churned[c]; }), name: 'Retained', type: 'bar', marker: { color: colors.retained } },
+                        { x: chartLabels, y: categories.map(function (c) { return data.churned[c]; }), name: 'Churned', type: 'bar', marker: { color: colors.churned } }
+                    ], layout({
+                        barmode: 'group',
+                        legend: { orientation: 'h', y: 1.1, font: { color: colors.font } },
+                        yaxis: { gridcolor: colors.grid, color: colors.font, title: 'Monthly Charges ($)' }
+                    }), { responsive: true, displayModeBar: false });
+                });
+        }
+
+        renderAnalyticsCharts();
+        ChurnGuardTheme.onThemeChange(renderAnalyticsCharts);
+
+        function clearSkeleton(id) {
+            var el = document.getElementById(id);
+            if (el) {
+                var sk = el.querySelector('.chart-skeleton');
+                if (sk) sk.remove();
+            }
+        }
+
+        function renderCredibilityCharts() {
+            var colors = ChurnGuardTheme.getChartColors();
+            var layout = ChurnGuardTheme.getPlotlyLayout;
+
+            fetchChart('/api/chart-data/roc_curve').then(function (data) {
+                var auc = {{ (stats.get('model_results', {}).get(stats.get('best_model', ''), {}).get('roc_auc', 0))|tojson }};
+                Plotly.newPlot('analyticsRocChart', [
+                    { x: data.fpr, y: data.tpr, type: 'scatter', mode: 'lines', name: 'ROC (AUC=' + (auc * 100).toFixed(1) + '%)', line: { color: colors.primary, width: 3 } },
+                    { x: [0, 1], y: [0, 1], type: 'scatter', mode: 'lines', name: 'Random', line: { color: colors.font, dash: 'dash' } }
+                ], layout({ xaxis: { title: 'False Positive Rate' }, yaxis: { title: 'True Positive Rate' }, legend: { orientation: 'h', y: 1.12 } }), { responsive: true, displayModeBar: false });
+                clearSkeleton('analyticsRocChart');
+            });
+
+            var cm = {{ stats.get('best_model_confusion_matrix', [[0,0],[0,0]])|tojson }};
+            Plotly.newPlot('analyticsCmChart', [{
+                z: cm,
+                x: ['Pred Retained', 'Pred Churned'],
+                y: ['Actual Retained', 'Actual Churned'],
+                type: 'heatmap',
+                colorscale: [[0, colors.info], [0.5, colors.warning], [1, colors.churned]],
+                showscale: true,
+                text: cm.map(function (row) { return row.map(String); }),
+                texttemplate: '%{text}',
+                hoverongaps: false
+            }], layout({ margin: { t: 20, b: 60, l: 100, r: 20 } }), { responsive: true, displayModeBar: false });
+            clearSkeleton('analyticsCmChart');
+        }
+        renderCredibilityCharts();
+        ChurnGuardTheme.onThemeChange(function () { renderAnalyticsCharts(); renderCredibilityCharts(); });
+    });
+</script>
+{% endblock %}

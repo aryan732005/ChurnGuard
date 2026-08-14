@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Experiments — ChurnGuard{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header reveal">
+        <h1>Experiments</h1>
+        <p>Model training runs — compare metrics, hyperparameters, and evaluation charts.</p>
+        <p class="text-sm text-muted" id="expMethodology" style="margin-top:8px">Methodology: loading…</p>
+    </div>
+
+    <div id="expAlert" class="alert alert-error hidden reveal"></div>
+
+    <div class="card reveal">
+        <div class="filters" style="margin-bottom:16px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+            <div class="form-group" style="margin:0;min-width:160px">
+                <label class="text-sm">Model type</label>
+                <input type="text" id="filterModel" placeholder="e.g. Logistic">
+            </div>
+            <div class="form-group" style="margin:0;min-width:140px">
+                <label class="text-sm">Date from</label>
+                <input type="date" id="filterDate">
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" id="applyFilters">Apply</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="compareBtn" disabled>Compare selected (0)</button>
+        </div>
+
+        <div id="expLoading" class="text-muted text-sm">Loading experiments…</div>
+        <div class="table-wrap" id="expTableWrap" hidden>
+            <table id="expTable" aria-label="Model experiment runs">
+                <thead><tr>
+                    <th scope="col"><input type="checkbox" id="selectAll" title="Select for compare" aria-label="Select all on page"></th>
+                    <th data-sort="model_type">Model</th>
+                    <th data-sort="date">Date</th>
+                    <th data-sort="roc_auc">ROC AUC</th>
+                    <th data-sort="pr_auc">PR-AUC</th>
+                    <th data-sort="precision">Precision</th>
+                    <th data-sort="recall">Recall</th>
+                    <th data-sort="f1_score">F1</th>
+                    <th data-sort="status">Status</th>
+                    <th></th>
+                </tr></thead>
+                <tbody id="expBody"></tbody>
+            </table>
+        </div>
+        <p id="expEmpty" class="text-muted text-sm hidden" style="margin-top:16px" role="status">No experiments yet. Run <code>python train_model.py</code> from the repo root.</p>
+        <nav id="expPagination" class="text-sm" style="margin-top:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap" aria-label="Experiments pagination" hidden>
+            <button type="button" class="btn btn-secondary btn-sm" id="expPrev" aria-label="Previous page">Previous</button>
+            <span id="expPageInfo" aria-live="polite">Page 1 of 1</span>
+            <button type="button" class="btn btn-secondary btn-sm" id="expNext" aria-label="Next page">Next</button>
+        </nav>
+    </div>
+
+    <!-- Detail panel -->
+    <div class="disclosure reveal" style="margin-top:24px" id="detailPanel" hidden>
+        <button type="button" class="disclosure-trigger" aria-expanded="true" data-target="exp-detail">
+            <span class="disclosure-title-wrap">
+                <span class="disclosure-title" id="detailTitle">Experiment detail</span>
+                <span class="disclosure-subtitle" id="detailSubtitle"></span>
+            </span>
+            <i data-lucide="chevron-down" class="disclosure-chevron"></i>
+        </button>
+        <div class="disclosure-panel open" id="exp-detail">
+            <div class="disclosure-body">
+                <div class="grid-4" id="detailMetrics"></div>
+                <div class="grid-2" style="margin-top:20px">
+                    <div class="card flat"><h3>Hyperparameters</h3><pre class="code-block text-sm" id="detailParams">—</pre></div>
+                    <div class="card flat"><h3>Per-class metrics</h3><div id="detailPerClass" class="text-sm text-muted">—</div></div>
+                </div>
+                <div class="grid-2" style="margin-top:16px">
+                    <div class="card flat"><h3>ROC curve</h3><div id="detailRoc" class="chart-container"></div></div>
+                    <div class="card flat"><h3>Precision–recall curve</h3><div id="detailPr" class="chart-container"></div></div>
+                </div>
+                <div class="grid-2" style="margin-top:16px">
+                    <div class="card flat"><h3>Confusion matrix</h3><div id="detailCm" class="chart-container"></div></div>
+                </div>
+                <p class="text-sm text-muted" id="detailNote" style="margin-top:12px"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compare panel -->
+    <div class="card reveal" style="margin-top:24px" id="comparePanel" hidden>
+        <h3>Compare experiments</h3>
+        <div class="table-wrap" style="margin-top:16px">
+            <table id="compareTable"><thead><tr>
+                <th>Metric</th><th id="cmpCol0">—</th><th id="cmpCol1">—</th><th id="cmpCol2">—</th>
+            </tr></thead><tbody id="compareBody"></tbody></table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/experiments.js"></script>
+{% endblock %}

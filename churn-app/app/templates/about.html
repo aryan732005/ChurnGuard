@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block title %}Case Study — ChurnGuard{% endblock %}
+
+{% block content %}
+<div class="container case-study" style="max-width:720px;padding:48px 24px 80px">
+    <article class="reveal">
+        <p class="text-sm text-muted" style="text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">About ChurnGuard</p>
+        <h1>Customer churn prediction for telecom retention</h1>
+        <p class="text-muted" style="margin:16px 0 48px;font-size:17px">ChurnGuard — self-hosted software for predicting cancellation risk and prioritizing retention outreach.</p>
+
+        <section class="case-section">
+            <h2>What this is</h2>
+            <p class="text-muted">ChurnGuard is deployable churn analytics: data audit, feature engineering, calibrated classification, FastAPI inference, experiment tracking, and a retention-focused UI. Run it on your servers with Docker or uvicorn; swap in your CRM export when ready. The bundled demo uses the public IBM Telco benchmark — not your live customer data unless you connect it.</p>
+        </section>
+
+        <section class="case-section">
+            <h2>Dataset &amp; provenance</h2>
+            <p class="text-muted" id="datasetProvenance">The underlying data is the <strong>IBM Telco Customer Churn</strong> public benchmark (7,043 anonymised customer records, 21 attributes). If <code>data/telco_churn.csv</code> is missing, the training pipeline generates a synthetic dataset with the same schema — clearly labelled in <code>stats.json</code>. This is <em>not</em> live production CRM data.</p>
+        </section>
+
+        <section class="case-section">
+            <h2>Model pipeline (high level)</h2>
+            <ol class="text-muted case-list">
+                <li>Load Telco CSV → leakage audit → feature engineering (RFM, interactions)</li>
+                <li>80/20 stratified train/test split (no event timestamps — not temporal)</li>
+                <li>Train candidates with <code>class_weight='balanced'</code> (not SMOTE)</li>
+                <li>5-fold stratified CV on train; report mean ± std; multi-seed variance check</li>
+                <li>Isotonic calibration → cost-based threshold (FP=$15, FN=$1680 LTV)</li>
+                <li>Export model artifacts + MLflow run + drift reference profile</li>
+                <li>Serve via FastAPI with SHAP-style linear attributions for explainability</li>
+            </ol>
+        </section>
+
+        <section class="case-section">
+            <h2>Executive report</h2>
+            <p class="text-muted">Download the PDF summary or email it to a stakeholder.</p>
+            <p style="margin-top:12px">
+                <a href="/api/executive-summary.pdf" class="btn btn-secondary btn-sm" download>Download PDF</a>
+            </p>
+            <form id="aboutReportForm" style="margin-top:16px;max-width:480px" aria-label="Email executive report">
+                <div class="form-group">
+                    <label for="aboutReportEmail">Email report to</label>
+                    <input type="email" id="aboutReportEmail" required placeholder="stakeholder@company.com">
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm">Send report</button>
+                <p class="text-sm text-muted" style="margin-top:8px" id="aboutReportStatus"></p>
+            </form>
+        </section>
+
+        <section class="case-section">
+            <h2>Architecture</h2>
+            <div class="card flat mermaid-wrap">
+                <pre class="mermaid">flowchart LR
+  A[CSV / CRM ingest] --> B[Leakage audit &amp; feature engineering]
+  B --> C[Train / MLflow tracking]
+  C --> D[Model artifacts]
+  D --> E[FastAPI inference]
+  E --> F[Jinja2 UI]
+  E --> G[Batch scoring &amp; drift]</pre>
+            </div>
+            <div class="card flat mermaid-wrap" style="margin-top:16px">
+                <pre class="mermaid">sequenceDiagram
+  participant Client
+  participant API as FastAPI /api/predict
+  participant ML as ChurnPredictor
+  participant LLM as NL explain optional
+  Client->>API: POST customer JSON
+  API->>API: sanitize &amp; validate
+  API->>ML: encode, scale, predict
+  ML-->>API: probability + SHAP factors
+  API->>LLM: top factors optional
+  LLM-->>API: plain-English summary
+  API-->>Client: JSON response</pre>
+            </div>
+            <p class="text-sm text-muted" style="margin-top:16px">
+                <a href="/docs#architecture">Full docs</a>
+            </p>
+        </section>
+
+        <section class="case-section">
+            <h2>Problem</h2>
+            <p class="text-muted">Telecom providers face ~30% annual churn. Reactive cancellation handling loses revenue and increases acquisition cost. The business need: identify at-risk customers early enough to run targeted retention — without spamming the entire base.</p>
+        </section>
+
+        <section class="case-section">
+            <h2>Data &amp; constraints</h2>
+            <p class="text-muted" id="churnDef">7,043 anonymised customer records, 21 attributes (tenure, contract, services, billing). Class imbalance: ~70% retained / ~30% churned.</p>
+            <p class="text-muted" style="margin-top:12px" id="temporalNote">No event timestamp — cross-sectional snapshot only. Point-in-time feature correctness cannot be fully verified without cancellation dates.</p>
+        </section>
+
+        <section class="case-section">
+            <h2>Approach</h2>
+            <ul class="text-muted case-list">
+                <li><strong>Churn definition:</strong> <span id="churnDefinitionInline">Cancellation/non-renewal within ~30 days of snapshot (Telco benchmark convention)</span></li>
+                <li>Leakage audit on all features — see <code>docs/leakage_audit.md</code></li>
+                <li>Engineered RFM/trend/interaction features — see <code>docs/feature_engineering.md</code></li>
+                <li>Label + one-hot encoding; standard scaling for numerics</li>
+                <li><strong>80/20 stratified hold-out</strong> — no time column, so stratified split preserves churn rate</li>
+                <li><strong>5-fold stratified CV + multi-seed variance</strong> — metrics reported as mean ± std</li>
+                <li><strong>Class-weighting</strong> (<code>class_weight='balanced'</code>) — not SMOTE</li>
+                <li><strong>Probability calibration</strong> (isotonic/Platt) before ROI-linked threshold optimisation</li>
+                <li><strong>Drift monitoring</strong> — PSI/KS vs training profile on batch uploads; would trigger retrain in production</li>
+                <li>SHAP / coefficient explanations with explicit non-causal disclaimer</li>
+            </ul>
+            <div class="card callout" style="margin-top:20px">
+                <div class="callout-label">Validation strategy</div>
+                <p class="text-sm text-muted" id="validationNote">Stratified k-fold cross-validation with held-out test set — chosen because the dataset lacks a reliable event date for temporal splitting.</p>
+            </div>
+        </section>
+
+        <section class="case-section">
+            <h2>Trade-offs</h2>
+            <p class="text-muted"><strong>Interpretability vs accuracy:</strong> Logistic Regression (tuned) was selected — slightly competitive with tree ensembles but easier to explain to stakeholders via coefficients. <strong>Recall vs precision:</strong> Retention teams often prefer higher recall (catch more churners) at the cost of false alarms; threshold tuning on /insights adjusts this. <strong>Class weighting vs SMOTE:</strong> Weighting is simpler to defend academically and never alters test data.</p>
+        </section>
+
+        <section class="case-section">
+            <h2>Results</h2>
+            <p class="text-muted">Best model: <strong>Logistic Regression (Tuned)</strong> — ~78.5% ROC AUC on held-out test data vs ~70% naive baseline accuracy. Per-class recall on churners matters more than headline accuracy for campaign design. Error analysis on /insights shows representative false positives and false negatives.</p>
+        </section>
+
+        <section class="case-section">
+            <h2>Limitations</h2>
+            <ul class="text-muted case-list">
+                <li>Cross-sectional data — cannot model seasonality or enforce per-customer temporal cutoffs</li>
+                <li>Synthetic/demo data generation may not reflect live CRM quality</li>
+                <li>Calibration and threshold costs use default assumptions ($15 offer, $1680 LTV)</li>
+                <li>Drift detection is basic PSI/KS — not a full production monitoring stack</li>
+                <li>SHAP attributions are correlational, not causal — recommended actions are heuristics</li>
+                <li>Fairness audit is illustrative, not exhaustive</li>
+                <li>Retrain flow is a simulation — not a production MLOps pipeline</li>
+            </ul>
+        </section>
+
+        <section class="case-section">
+            <h2>Future work</h2>
+            <ul class="text-muted case-list">
+                <li>Time-based validation when event timestamps become available</li>
+                <li>Champion/challenger deployment with drift monitoring</li>
+                <li>Causal uplift modeling for retention offer targeting</li>
+                <li>Integration with CRM for automated outreach workflows</li>
+            </ul>
+        </section>
+
+        <section class="case-section">
+            <h2>Data privacy &amp; production use</h2>
+            <p class="text-muted">Customer identifiers are anonymised in this demo dataset. In production, PII would be tokenised at ingestion, models trained on aggregated features only, and access restricted via role-based auth (Clerk). Predictions would be logged with retention policies — no raw billing data stored in application logs. GDPR-style deletion requests would cascade through the feature store and prediction audit trail.</p>
+        </section>
+    </article>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+mermaid.initialize({ startOnLoad: true, theme: 'neutral' });
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    fetch('/api/metrics').then(function (r) { return r.json(); }).then(function (m) {
+        var v = m.validation || {};
+        if (v.validation_justification) {
+            document.getElementById('validationNote').textContent = v.validation_justification;
+        }
+        if (m.churn_definition) {
+            document.getElementById('churnDefinitionInline').textContent = m.churn_definition;
+        }
+        if (m.temporal_limitation) {
+            document.getElementById('temporalNote').textContent = m.temporal_limitation;
+        }
+        var ds = m.dataset || {};
+        if (ds.source_label) {
+            document.getElementById('datasetProvenance').innerHTML =
+                'The underlying data is <strong>' + (ds.name || 'Telco Customer Churn') + '</strong>: ' +
+                ds.source_label + '. ' + (ds.records || m.total_customers || 7043).toLocaleString() +
+                ' records. <em>Not</em> live production CRM data.';
+        }
+    });
+
+    var aboutForm = document.getElementById('aboutReportForm');
+    if (aboutForm) {
+        aboutForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            var status = document.getElementById('aboutReportStatus');
+            status.textContent = 'Sending…';
+            fetch('/api/report/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: document.getElementById('aboutReportEmail').value }),
+            }).then(function (r) { return r.json(); }).then(function (d) {
+                status.textContent = d.message || 'Done.';
+            }).catch(function () {
+                status.textContent = 'Could not send — try downloading the PDF instead.';
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

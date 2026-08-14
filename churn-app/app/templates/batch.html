@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Batch Prediction{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header reveal">
+        <h1>Batch prediction</h1>
+        <p>Upload a CSV of customer records. We'll score each row and return a downloadable results file.</p>
+    </div>
+
+    <div class="card reveal" style="max-width:640px;margin:0 auto">
+        <div class="upload-zone" id="uploadZone">
+            <input type="file" id="csvFile" accept=".csv">
+            <i data-lucide="upload" style="width:32px;height:32px;color:var(--text-muted);margin-bottom:12px"></i>
+            <p><strong>Drop CSV here</strong> or click to browse</p>
+            <p class="text-sm text-muted" style="margin-top:8px">Telco-format columns supported</p>
+        </div>
+        <div id="batchErrors" class="alert alert-error hidden" style="margin-top:16px"></div>
+        <div id="batchProgress" style="display:none;margin-top:24px">
+            <div class="skeleton" style="height:8px;border-radius:4px"></div>
+            <p class="text-sm text-muted" style="margin-top:8px">Processing…</p>
+        </div>
+        <div id="batchResults" style="display:none;margin-top:32px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                <h3>Results</h3>
+                <button type="button" class="btn btn-primary btn-sm" id="downloadCsv">Download CSV</button>
+            </div>
+            <div class="table-wrap" style="max-height:400px;overflow:auto">
+                <table id="batchTable"><thead></thead><tbody></tbody></table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/batch.js"></script>
+{% endblock %}

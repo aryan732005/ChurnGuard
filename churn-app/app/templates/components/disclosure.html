@@ -1,0 +1,18 @@
+"""Reusable collapsible disclosure panels."""
+
+{% macro disclosure(id, title, subtitle='', open=false) %}
+<div class="disclosure reveal" data-disclosure="{{ id }}">
+    <button type="button" class="disclosure-trigger" aria-expanded="{{ 'true' if open else 'false' }}" data-target="{{ id }}">
+        <span class="disclosure-title-wrap">
+            <span class="disclosure-title">{{ title }}</span>
+            {% if subtitle %}<span class="disclosure-subtitle">{{ subtitle }}</span>{% endif %}
+        </span>
+        <i data-lucide="chevron-down" class="disclosure-chevron"></i>
+    </button>
+    <div class="disclosure-panel{% if open %} open{% endif %}" id="{{ id }}">
+        <div class="disclosure-body">
+            {{ caller() }}
+        </div>
+    </div>
+</div>
+{% endmacro %}

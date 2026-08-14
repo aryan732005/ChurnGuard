@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ChurnGuard AI{% endblock %} | Customer Churn Prediction</title>
+    <meta name="description" content="{% block meta_description %}AI-powered customer churn prediction using machine learning to identify at-risk customers before they leave.{% endblock %}">
+    {% block meta_og %}{% endblock %}
+    <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+    <script>
+        (function () {
+            var stored = localStorage.getItem('churnguard-theme');
+            var theme = stored || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+    {% block head %}{% endblock %}
+</head>
+<body class="{% block body_class %}app-shell{% endblock %}">
+    {% include 'partials/topnav.html' %}
+    <main class="page-wrapper {% block wrapper_class %}{% endblock %}">
+        {% if session.get('logged_in') and request.endpoint != 'landing' %}
+        <div class="page-header">
+            <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
+            {% block page_actions %}{% endblock %}
+        </div>
+        {% endif %}
+        <div class="content-area {% block content_class %}{% endblock %}">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+    {% block footer %}{% endblock %}
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

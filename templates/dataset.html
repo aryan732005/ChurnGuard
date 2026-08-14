@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Dataset{% endblock %}
+{% block page_title %}Dataset Explorer{% endblock %}
+
+{% block content %}
+{% set qp = {'search': search, 'contract': contract_filter, 'churn': churn_filter} %}
+<div class="dataset-page page-enter">
+    <form method="GET" class="dataset-filters">
+        <div class="filter-group">
+            <label for="search">Search Customer ID</label>
+            <input type="text" id="search" name="search" value="{{ search }}" placeholder="e.g. 1234-ABCDE">
+        </div>
+        <div class="filter-group">
+            <label for="contract">Contract Type</label>
+            <select name="contract" id="contract">
+                <option value="">All contracts</option>
+                {% for c in contract_options %}
+                <option value="{{ c }}" {% if contract_filter == c %}selected{% endif %}>{{ c }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="churn">Churn Status</label>
+            <select name="churn" id="churn">
+                <option value="">All</option>
+                <option value="Yes" {% if churn_filter == 'Yes' %}selected{% endif %}>Churned</option>
+                <option value="No" {% if churn_filter == 'No' %}selected{% endif %}>Retained</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Apply Filters</button>
+        <a href="{{ url_for('dataset') }}" class="btn btn-ghost btn-sm">Clear</a>
+    </form>
+
+    <div class="dataset-info">
+        <div class="info-badges">
+            <span class="badge">{{ total }} Records</span>
+            <span class="badge">{{ columns|length }} Features</span>
+            <span class="badge">Page {{ page }} of {{ total_pages }}</span>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table class="data-table" id="dataTable">
+            <thead>
+                <tr>
+                    {% for col in columns %}
+                    <th>{{ col }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in data %}
+                <tr>
+                    {% for col in columns %}
+                    <td>
+                        {% if col == 'Churn' %}
+                        <span class="churn-badge {{ 'yes' if row[col] == 'Yes' else 'no' }}">{{ row[col] }}</span>
+                        {% else %}
+                        {{ row[col] }}
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="pagination">
+        {% if page > 1 %}
+        <a href="{{ url_for('dataset', page=page-1, **qp) }}" class="page-btn" id="prevPage">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Previous
+        </a>
+        {% endif %}
+
+        <div class="page-numbers">
+            {% for p in range(1, total_pages + 1) %}
+            {% if p == page %}
+            <span class="page-num active">{{ p }}</span>
+            {% elif p <= 3 or p> total_pages - 2 or (p >= page - 1 and p <= page + 1) %} <a
+                    href="{{ url_for('dataset', page=p, **qp) }}" class="page-num">{{ p }}</a>
+                    {% elif p == 4 or p == total_pages - 2 %}
+                    <span class="page-dots">...</span>
+                    {% endif %}
+                    {% endfor %}
+        </div>
+
+        {% if page < total_pages %} <a href="{{ url_for('dataset', page=page+1, **qp) }}" class="page-btn" id="nextPage">
+            Next
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 18 15 12 9 6" />
+            </svg>
+            </a>
+            {% endif %}
+    </div>
+</div>
+{% endblock %}

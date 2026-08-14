@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}API Documentation{% endblock %}
+
+{% block content %}
+<div class="container docs-layout">
+    <nav class="docs-nav reveal">
+        <a href="#architecture">Architecture</a>
+        <a href="#predict">POST /api/predict</a>
+        <a href="#batch">POST /api/batch-predict</a>
+        <a href="#metrics">GET /api/metrics</a>
+        <a href="#importance">GET /api/feature-importance</a>
+        <a href="#dashboard">GET /api/dashboard-data</a>
+        <a href="#production">Deployment</a>
+        <a href="#report">Executive report</a>
+        <a href="/swagger" target="_blank" rel="noopener">Swagger UI</a>
+    </nav>
+    <div class="docs-content reveal">
+        <h1>API reference</h1>
+        <p class="text-muted" style="margin-bottom:40px">REST endpoints for churn prediction and analytics. Base URL: <code>/api</code></p>
+
+        <section id="architecture" style="margin-bottom:48px">
+            <h2>Architecture</h2>
+            <div class="card flat mermaid-wrap">
+                <pre class="mermaid">flowchart TB
+  ingest[Data ingestion CSV/CRM] --> prep[Preprocess &amp; feature engineering]
+  prep --> train[train_model.py + MLflow]
+  train --> artifacts[(models/ stats.json)]
+  artifacts --> api[FastAPI API]
+  api --> ui[Jinja2 frontend]
+  api --> batch[Batch &amp; drift PSI]</pre>
+            </div>
+            <p class="text-sm text-muted" style="margin-top:12px">See <code>docs/design-decisions.md</code> and <code>docs/data-privacy.md</code> in the repo.</p>
+        </section>
+
+        <section id="predict" style="margin-bottom:48px">
+            <h2>POST /api/predict</h2>
+            <p class="text-muted">Score a single customer profile.</p>
+            <h3 style="margin-top:20px;font-size:13px;color:var(--text-secondary)">Request</h3>
+            <pre class="code-block">{
+  "tenure": 12,
+  "Contract": "Month-to-month",
+  "MonthlyCharges": 70.0,
+  "TotalCharges": 840.0,
+  "InternetService": "Fiber optic",
+  "PaymentMethod": "Electronic check",
+  "gender": "Male",
+  "SeniorCitizen": 0,
+  "Partner": "No",
+  "Dependents": "No",
+  "PhoneService": "Yes",
+  "MultipleLines": "No",
+  "OnlineSecurity": "No",
+  "PaperlessBilling": "Yes"
+}</pre>
+            <h3 style="margin-top:20px;font-size:13px;color:var(--text-secondary)">Response</h3>
+            <pre class="code-block">{
+  "churn_probability": 67.42,
+  "prediction": "Churn",
+  "confidence": 34.8,
+  "risk_level": "High",
+  "top_factors": [
+    { "feature": "Contract_Month-to-month", "impact": 0.82 }
+  ]
+}</pre>
+        </section>
+
+        <section id="batch" style="margin-bottom:48px">
+            <h2>POST /api/batch-predict</h2>
+            <p class="text-muted">Upload CSV (<code>multipart/form-data</code>, field: <code>file</code>).</p>
+            <pre class="code-block">curl -X POST /api/batch-predict -F "file=@customers.csv"</pre>
+        </section>
+
+        <section id="metrics" style="margin-bottom:48px">
+            <h2>GET /api/metrics</h2>
+            <p class="text-muted">Model performance metrics, confusion matrix, and ROC data.</p>
+        </section>
+
+        <section id="importance" style="margin-bottom:48px">
+            <h2>GET /api/feature-importance</h2>
+            <p class="text-muted">SHAP / coefficient-based feature importance rankings.</p>
+        </section>
+
+        <section id="dashboard" style="margin-bottom:48px">
+            <h2>GET /api/dashboard-data</h2>
+            <p class="text-muted">Query params: <code>contract</code>, <code>tenure_min</code>, <code>tenure_max</code></p>
+        </section>
+
+        <section id="production" style="margin-bottom:48px">
+            <h2>Deployment &amp; model versioning</h2>
+            <div class="card flat">
+                <p class="text-muted text-sm">ChurnGuard is designed to run beyond localhost — via Docker, uvicorn/gunicorn behind a reverse proxy, or your cloud VM.</p>
+                <h3 style="margin-top:20px;font-size:14px">Required environment variables</h3>
+                <pre class="code-block text-sm">ADMIN_USER=admin
+ADMIN_PASSWORD=&lt;strong-secret&gt;
+CLERK_PUBLISHABLE_KEY=pk_...   # optional — UI auth
+CLERK_SECRET_KEY=sk_...        # server only, never expose to browser
+OPENAI_API_KEY=sk-...          # optional — NL explanations
+CORS_ORIGINS=https://your-domain.com</pre>
+                <h3 style="margin-top:20px;font-size:14px">Model artifacts</h3>
+                <p class="text-sm text-muted">Training (<code>python train_model.py</code>) writes to <code>models/</code>, <code>data/stats.json</code>, and <code>mlruns/</code>. The API loads artifacts at process startup.</p>
+                <p class="text-sm text-muted" style="margin-top:8px"><strong>Promotion:</strong> After retraining, restart the app (or redeploy the container) to serve the new model. Version history is tracked in <code>data/model_versions.json</code>; there is no automatic hot-swap without a restart.</p>
+                <p class="text-sm text-muted" style="margin-top:8px">Admin-only routes: <code>/retrain</code>, <code>/logs</code>, <code>POST /api/retrain-simulation</code>.</p>
+            </div>
+            <div class="card flat" style="margin-top:16px" id="modelInfoCard">
+                <p class="text-muted text-sm">Loading model info…</p>
+            </div>
+        </section>
+
+        <section id="report" style="margin-bottom:48px">
+            <h2>Executive report</h2>
+            <p class="text-muted">Download or email the PDF executive summary.</p>
+            <pre class="code-block">GET /api/executive-summary.pdf
+POST /api/report/send
+{ "email": "stakeholder@company.com" }</pre>
+            <p class="text-sm text-muted" style="margin-top:12px">Configure SMTP in <code>.env.local</code> to send live email (<code>SMTP_HOST</code>, <code>SMTP_USER</code>, <code>SMTP_PASSWORD</code>). Without SMTP, reports are queued under <code>data/pending_report_emails/</code>.</p>
+        </section>
+
+        <section id="threshold">
+            <h2>GET /api/threshold</h2>
+            <p class="text-muted">Query param: <code>threshold</code> (0.05–0.95). Returns precision/recall curve.</p>
+        </section>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+mermaid.initialize({ startOnLoad: true, theme: 'neutral' });
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    fetch('/api/model-info').then(function (r) { return r.json(); }).then(function (info) {
+        document.getElementById('modelInfoCard').innerHTML =
+            '<p><strong>Model:</strong> ' + info.model_name + '</p>' +
+            '<p class="text-sm text-muted" style="margin-top:8px"><strong>Artifact size:</strong> ' + info.artifact_size_kb + ' KB · ' +
+            '<strong>Features:</strong> ' + info.feature_count + ' · ' +
+            '<strong>Typical inference:</strong> ~' + info.typical_inference_ms + ' ms (single row, CPU)</p>' +
+            '<p class="text-sm text-muted" style="margin-top:12px">' + info.notes + '</p>';
+    });
+});
+</script>
+{% endblock %}

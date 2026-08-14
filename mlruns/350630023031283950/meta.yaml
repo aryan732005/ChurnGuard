@@ -1,0 +1,9 @@
+artifact_location: file:///C:/Users/aryan/OneDrive/Desktop/ChurnPrediction/mlruns/350630023031283950
+creation_time: 1786554465775
+effective_trace_archival_retention: null
+experiment_id: '350630023031283950'
+last_update_time: 1786554465775
+lifecycle_stage: active
+name: churnguard-training
+trace_location: null
+workspace: default

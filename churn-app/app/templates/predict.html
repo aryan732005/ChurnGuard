@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Prediction Demo{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header reveal">
+        <h1>Prediction demo</h1>
+        <p>Enter customer attributes to score churn risk. Use the simulator below to explore what-if scenarios.</p>
+    </div>
+
+    <div class="grid-2 reveal" style="align-items:start">
+        <div class="card">
+            <h3>Customer profile</h3>
+            <form id="predictForm" class="form-grid" style="margin-top:20px">
+                <div id="predictErrors" class="alert alert-error hidden full" style="grid-column:1/-1"></div>
+                <div class="form-group"><label>Tenure (months)</label><input type="number" name="tenure" id="tenure" value="12" min="0" max="72"></div>
+                <div class="form-group"><label>Contract</label>
+                    <select name="Contract" id="contract">
+                        <option>Month-to-month</option><option>One year</option><option>Two year</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>Monthly charges ($)</label><input type="number" name="MonthlyCharges" id="monthly" value="70" step="0.01"></div>
+                <div class="form-group"><label>Total charges ($)</label><input type="number" name="TotalCharges" id="total" value="840" step="0.01"></div>
+                <div class="form-group"><label>Internet service</label>
+                    <select name="InternetService" id="internet">
+                        <option>DSL</option><option>Fiber optic</option><option>No</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>Payment method</label>
+                    <select name="PaymentMethod" id="payment">
+                        <option>Electronic check</option><option>Mailed check</option>
+                        <option>Bank transfer (automatic)</option><option>Credit card (automatic)</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>Gender</label><select name="gender"><option>Male</option><option>Female</option></select></div>
+                <div class="form-group"><label>Senior citizen</label><select name="SeniorCitizen"><option value="0">No</option><option value="1">Yes</option></select></div>
+                <div class="form-group"><label>Partner</label><select name="Partner"><option>No</option><option>Yes</option></select></div>
+                <div class="form-group"><label>Dependents</label><select name="Dependents"><option>No</option><option>Yes</option></select></div>
+                <div class="form-group"><label>Phone service</label><select name="PhoneService"><option>Yes</option><option>No</option></select></div>
+                <div class="form-group"><label>Multiple lines</label><select name="MultipleLines"><option>No</option><option>Yes</option></select></div>
+                <div class="form-group"><label>Online security</label><select name="OnlineSecurity"><option>No</option><option>Yes</option></select></div>
+                <div class="form-group"><label>Paperless billing</label><select name="PaperlessBilling"><option>Yes</option><option>No</option></select></div>
+                <input type="hidden" name="OnlineBackup" value="No">
+                <input type="hidden" name="DeviceProtection" value="No">
+                <input type="hidden" name="TechSupport" value="No">
+                <input type="hidden" name="StreamingTV" value="No">
+                <input type="hidden" name="StreamingMovies" value="No">
+                <div class="form-group full"><button type="submit" class="btn btn-primary">Predict churn</button></div>
+            </form>
+        </div>
+
+        <div class="card" id="resultCard" style="display:none">
+            <h3>Prediction result</h3>
+            <div class="gauge-wrap">
+                <svg viewBox="0 0 120 120" width="160" height="160">
+                    <circle class="gauge-bg" cx="60" cy="60" r="52" fill="none" stroke-width="8"/>
+                    <circle class="gauge-fill" id="gaugeFill" cx="60" cy="60" r="52" fill="none" stroke-width="8"
+                        stroke-dasharray="0 327" transform="rotate(-90 60 60)"/>
+                </svg>
+                <div class="gauge-center">
+                    <span class="gauge-value" id="probValue">—</span>
+                    <span class="gauge-label">Churn probability</span>
+                </div>
+            </div>
+            <div style="text-align:center;margin-bottom:16px">
+                <span class="badge" id="riskBadge">—</span>
+            </div>
+            <p class="text-sm text-muted" style="text-align:center">Confidence: <strong id="confValue">—</strong></p>
+            <div class="progress-bar"><div class="progress-fill" id="probBar" style="width:0"></div></div>
+            <p class="text-sm text-muted" style="margin-top:16px"><strong>Recommended action:</strong> <span id="recommendedAction">—</span></p>
+            <h3 style="margin-top:24px;font-size:14px">Top factors</h3>
+            <ul id="factorList" class="text-sm text-muted" style="margin-top:8px;list-style:none"></ul>
+            <p class="text-sm text-muted" style="margin-top:16px" id="explainNote">SHAP values show model attribution, not causation. Recommended actions are heuristic retention plays.</p>
+            <div class="disclosure" style="margin-top:16px" id="nlExplainWrap" hidden>
+                <div class="callout-label">AI-generated summary</div>
+                <p class="text-sm" id="nlExplainText" style="margin-top:8px"></p>
+                <p class="text-sm text-muted" id="nlExplainLabel" style="margin-top:8px"></p>
+            </div>
+        </div>
+        <div class="card" id="resultPlaceholder">
+            <p class="text-muted" style="text-align:center;padding:60px 0">Submit the form or adjust the simulator to see results.</p>
+        </div>
+    </div>
+
+    <div class="disclosure reveal" style="margin-top:24px">
+        <button type="button" class="disclosure-trigger" aria-expanded="false" data-target="sim-panel">
+            <span class="disclosure-title-wrap">
+                <span class="disclosure-title">What-if simulator</span>
+                <span class="disclosure-subtitle">Adjust tenure and billing — live prediction updates</span>
+            </span>
+            <i data-lucide="chevron-down" class="disclosure-chevron"></i>
+        </button>
+        <div class="disclosure-panel" id="sim-panel">
+            <div class="disclosure-body">
+                <div class="form-grid">
+                    <div class="form-group full">
+                        <label>Tenure: <span id="simTenureVal">12</span> months</label>
+                        <input type="range" id="simTenure" min="0" max="72" value="12" style="width:100%">
+                    </div>
+                    <div class="form-group full">
+                        <label>Monthly charges: $<span id="simMonthlyVal">70</span></label>
+                        <input type="range" id="simMonthly" min="20" max="120" value="70" style="width:100%">
+                    </div>
+                </div>
+                <p class="text-sm text-muted" style="margin-top:16px">Live: <span class="badge" id="simRisk">—</span> · <span id="simProb">—</span>%</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/predict.js"></script>
+{% endblock %}

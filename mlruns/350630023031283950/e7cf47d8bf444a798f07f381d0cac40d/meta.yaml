@@ -1,0 +1,14 @@
+artifact_uri: file:///C:/Users/aryan/OneDrive/Desktop/ChurnPrediction/mlruns/350630023031283950/e7cf47d8bf444a798f07f381d0cac40d/artifacts
+end_time: 1786694088423
+entry_point_name: ''
+experiment_id: '350630023031283950'
+lifecycle_stage: active
+run_id: e7cf47d8bf444a798f07f381d0cac40d
+run_name: Logistic Regression (Tuned)-v4.0
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1786694055796
+status: 3
+tags: []
+user_id: aryan

@@ -1,0 +1,42 @@
+[
+  {
+    "version": "v1.0",
+    "version_num": 1,
+    "timestamp": "2026-08-12T17:06:45.256637+00:00",
+    "date": "2026-08-12 17:06 UTC",
+    "model_name": "Logistic Regression (Tuned)",
+    "roc_auc": 0.7934,
+    "roc_auc_delta": null,
+    "mlflow_run_id": ""
+  },
+  {
+    "version": "v2.0",
+    "version_num": 2,
+    "timestamp": "2026-08-12T17:07:42.971285+00:00",
+    "date": "2026-08-12 17:07 UTC",
+    "model_name": "Logistic Regression (Tuned)",
+    "roc_auc": 0.7934,
+    "roc_auc_delta": 0.0,
+    "mlflow_run_id": ""
+  },
+  {
+    "version": "v3.0",
+    "version_num": 3,
+    "timestamp": "2026-08-14T07:49:18.670043+00:00",
+    "date": "2026-08-14 07:49 UTC",
+    "model_name": "Logistic Regression (Tuned)",
+    "roc_auc": 0.7934,
+    "roc_auc_delta": 0.0,
+    "mlflow_run_id": ""
+  },
+  {
+    "version": "v4.0",
+    "version_num": 4,
+    "timestamp": "2026-08-14T07:54:09.837755+00:00",
+    "date": "2026-08-14 07:54 UTC",
+    "model_name": "Logistic Regression (Tuned)",
+    "roc_auc": 0.7934,
+    "roc_auc_delta": 0.0,
+    "mlflow_run_id": ""
+  }
+]

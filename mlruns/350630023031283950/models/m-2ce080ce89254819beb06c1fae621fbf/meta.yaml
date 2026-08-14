@@ -1,0 +1,10 @@
+artifact_location: file:///C:/Users/aryan/OneDrive/Desktop/ChurnPrediction/mlruns/350630023031283950/models/m-2ce080ce89254819beb06c1fae621fbf/artifacts
+creation_timestamp: 1786693767698
+experiment_id: '350630023031283950'
+last_updated_timestamp: 1786693808355
+model_id: m-2ce080ce89254819beb06c1fae621fbf
+model_type: null
+name: churn_model
+source_run_id: 078acf3d968948c3a76ddc100cd637c6
+status: 2
+status_message: null

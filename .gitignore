@@ -1,0 +1,38 @@
+# Secrets — never commit
+.env
+.env.local
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Node / frontend scaffold (large, optional)
+churn-app/my-clerk-vite-app/
+node_modules/
+
+# IDE / local
+.cursor/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Runtime / queued user data
+data/pending_report_emails/
+data/interest_leads.json
+churn-app/logs/
+*.log
+
+# OS
+desktop.ini

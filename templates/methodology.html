@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+{% block title %}Methodology{% endblock %}
+{% block page_title %}Methodology & Academic Context{% endblock %}
+
+{% block content %}
+{% set v = stats.get('validation', {}) %}
+{% set params = stats.get('best_model_params', {}) %}
+{% set fairness = stats.get('fairness', {}) %}
+<div class="methodology-page">
+
+    <div class="method-intro">
+        <h2>ChurnGuard AI — Methodology & Research Context</h2>
+        <p>This page documents the business problem, data pipeline, validation rigour, fairness checks, and ethical boundaries of this academic churn-prediction system.</p>
+    </div>
+
+    <!-- Problem Statement -->
+    <div class="academic-section">
+        <h2>Problem Statement</h2>
+        <div class="prose-block">
+            <p>Customer churn — when subscribers cancel or fail to renew — is one of the most costly problems in telecommunications. Industry estimates suggest acquiring a new customer costs five to seven times more than retaining an existing one. When a telecom provider can identify at-risk customers before they leave, it can intervene with targeted retention offers, service improvements, or proactive support.</p>
+            <p>This project addresses that business problem by building a machine-learning classifier that estimates churn probability from billing, contract, and service-usage features. The goal is not perfect prediction, but actionable risk scoring that supports retention planning while remaining transparent about limitations and fairness.</p>
+        </div>
+    </div>
+
+    <!-- Related Work -->
+    <div class="academic-section">
+        <h2>Related Work / Literature Context</h2>
+        <div class="prose-block">
+            <p>Churn prediction has been studied extensively in telecom and subscription businesses. Comparative studies (e.g. Vafeiadis et al., 2015) consistently find that ensemble methods — Random Forest and Gradient Boosting — perform strongly on benchmark telco datasets, often exceeding single classifiers. Logistic regression remains a common baseline because it is interpretable and handles linear relationships between contract tenure, pricing, and churn risk well.</p>
+            <p>This project follows that established pattern: we train three mainstream scikit-learn classifiers, compare them against a naive majority-class baseline, and select the best model by ROC AUC — a standard choice when classes are imbalanced and threshold selection matters.</p>
+        </div>
+    </div>
+
+    <!-- Dataset & Preprocessing -->
+    <div class="academic-section">
+        <h2>Dataset &amp; Preprocessing</h2>
+        <div class="prose-block">
+            <p><strong>Source:</strong> Telco Customer Churn dataset (IBM Sample Data / Kaggle mirror), comprising {{ stats.get('total_customers', 7043) }} customer records and 21 features including demographics, services, billing, and a binary churn label.</p>
+            <p><strong>Class distribution:</strong> {{ stats.get('no_churn_count', 0) }} retained ({{ (100 - stats.get('churn_rate', 0))|round(2) }}%) vs {{ stats.get('churn_count', 0) }} churned ({{ stats.get('churn_rate', 0) }}%) — a ~70/30 imbalance that motivates class-weighting.</p>
+            <p><strong>Missing values:</strong> <code>TotalCharges</code> coerced to numeric; any remaining nulls imputed with the column median.</p>
+            <p><strong>Encoding:</strong> Label encoding for binary categoricals (gender, Partner, Dependents, PhoneService, PaperlessBilling, Churn); one-hot encoding with <code>drop_first=True</code> for multi-level fields (Contract, InternetService, PaymentMethod, etc.).</p>
+            <p><strong>Scaling:</strong> StandardScaler (<code>z = (x − μ) / σ</code>) applied after encoding so numeric and dummy features contribute on comparable scales.</p>
+            <p><strong>Reproducibility:</strong> {{ v.get('reproducibility_note', 'All experiments use random_state=42.') }}</p>
+        </div>
+    </div>
+
+    <!-- Model Validation -->
+    <div class="academic-section">
+        <h2>Model Validation</h2>
+        <div class="prose-block">
+            <p><strong>Train/test split:</strong> {{ v.get('train_test_split', '80/20') }}, stratified by churn label so both sets preserve the ~70/30 class ratio.</p>
+            <p><strong>Cross-validation:</strong> {{ v.get('cv_folds', 5) }}-fold stratified CV on the training set only; held-out test scores are reported separately to detect overfitting.</p>
+            <p><strong>Class imbalance:</strong> {{ v.get('imbalance_method', 'class_weight') }} — {{ v.get('imbalance_rationale', '') }}</p>
+            <p><strong>Baseline:</strong> A majority-class classifier (always predicts "retained") is included so improvement over naïve accuracy (~70%) is explicit.</p>
+            <p><strong>Hyperparameter tuning:</strong> GridSearchCV on the best pre-tuning model. Final {{ stats.get('best_model', 'model') }} params: {% for k, val in params.items() if k != 'best_cv_roc_auc' %}<code>{{ k }}={{ val }}</code>{% if not loop.last %}, {% endif %}{% endfor %} (best CV ROC AUC: {{ (params.get('best_cv_roc_auc', 0) * 100)|round(2) }}%).</p>
+        </div>
+        {% if stats.get('model_results') %}
+        <div class="table-container validation-table-wrap">
+            <table class="data-table validation-table">
+                <thead>
+                    <tr>
+                        <th>Model</th>
+                        <th>5-Fold CV ROC AUC</th>
+                        <th>Test ROC AUC</th>
+                        <th>Test F1</th>
+                        <th>Test Accuracy</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for name, r in stats.model_results.items() %}
+                    <tr class="{{ 'highlight-row' if name == stats.get('best_model') else '' }}">
+                        <td><strong>{{ name }}</strong></td>
+                        <td>{% if r.get('cv_roc_auc_mean') is not none %}{{ (r.get('cv_roc_auc_mean', 0) * 100)|round(2) }}% ± {{ (r.get('cv_roc_auc_std', 0) * 100)|round(2) }}%{% else %}—{% endif %}</td>
+                        <td>{{ (r.get('roc_auc', 0) * 100)|round(2) }}%</td>
+                        <td>{{ (r.get('f1_score', 0) * 100)|round(2) }}%</td>
+                        <td>{{ (r.get('accuracy', 0) * 100)|round(2) }}%</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Pipeline Visual -->
+    <div class="pipeline-visual">
+        <div class="pipeline-step">
+            <div class="step-number">1</div>
+            <div class="step-content"><h4>Data Collection</h4><p>Telco dataset — {{ stats.get('total_customers', 7043) }} records</p></div>
+        </div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step">
+            <div class="step-number">2</div>
+            <div class="step-content"><h4>Preprocessing</h4><p>Encoding, scaling, stratified split</p></div>
+        </div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step">
+            <div class="step-number">3</div>
+            <div class="step-content"><h4>Training + CV</h4><p>3 classifiers + baseline, class weights</p></div>
+        </div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step">
+            <div class="step-number">4</div>
+            <div class="step-content"><h4>Tuning &amp; Test</h4><p>GridSearchCV, held-out evaluation</p></div>
+        </div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step">
+            <div class="step-number">5</div>
+            <div class="step-content"><h4>Deployment</h4><p>{{ stats.get('best_model', 'Best model') }} selected</p></div>
+        </div>
+    </div>
+
+    <!-- Fairness -->
+    {% if fairness.get('gender') %}
+    <div class="academic-section">
+        <h2>Fairness Analysis</h2>
+        <p class="section-lead">{{ fairness.get('note', '') }}</p>
+        <div class="fairness-grid">
+            <div class="fairness-card">
+                <h4>By Gender (Test Set)</h4>
+                <table>
+                    <tr><th>Group</th><th>n</th><th>Accuracy</th><th>F1</th><th>Error Rate</th></tr>
+                    {% for group, m in fairness.gender.items() %}
+                    <tr><td>{{ group }}</td><td>{{ m.count }}</td><td>{{ (m.accuracy * 100)|round(1) }}%</td><td>{{ (m.f1_score * 100)|round(1) }}%</td><td>{{ (m.error_rate * 100)|round(1) }}%</td></tr>
+                    {% endfor %}
+                </table>
+            </div>
+            <div class="fairness-card">
+                <h4>By Senior Citizen Status (Test Set)</h4>
+                <table>
+                    <tr><th>Group</th><th>n</th><th>Accuracy</th><th>F1</th><th>Error Rate</th></tr>
+                    {% for group, m in fairness.senior_citizen.items() %}
+                    <tr><td>{{ group }}</td><td>{{ m.count }}</td><td>{{ (m.accuracy * 100)|round(1) }}%</td><td>{{ (m.f1_score * 100)|round(1) }}%</td><td>{{ (m.error_rate * 100)|round(1) }}%</td></tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+        <div class="prose-block" style="margin-top:14px">
+            <p>Performance is broadly similar across gender groups (accuracy ~70%, F1 ~58–60%). Senior citizens show slightly higher accuracy in this test split — a difference worth monitoring but not conclusive from this basic audit alone.</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Ethical Considerations -->
+    <div class="academic-section">
+        <h2>Ethical Considerations</h2>
+        <div class="prose-block">
+            <ul>
+                <li><strong>Appropriate use:</strong> This model supports exploratory retention planning and academic demonstration. It should not be the sole basis for denying service, pricing discrimination, or automated account termination.</li>
+                <li><strong>Discrimination risk:</strong> Using churn scores to justify different retention offers by protected characteristics (gender, age) could reinforce unfair treatment even if the model is not explicitly trained on those attributes as primary drivers.</li>
+                <li><strong>Academic scope:</strong> ChurnGuard AI is a demonstrative academic system — not a production deployment recommendation. Real deployment would require legal review, ongoing monitoring, and stakeholder governance.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Data Privacy -->
+    <div class="academic-section">
+        <h2>Data Privacy</h2>
+        <div class="privacy-note">
+            The Telco Customer Churn dataset used here is a public, anonymised benchmark. It contains no real customer names, addresses, or contact information — only synthetic or de-identified account identifiers. This application does not store submitted prediction inputs beyond the current browser session, and authentication credentials are stored as password hashes, not plaintext.
+        </div>
+    </div>
+
+    <!-- Limitations -->
+    <div class="academic-section">
+        <h2>Limitations</h2>
+        <div class="prose-block">
+            <ul>
+                <li><strong>Single-domain data:</strong> Patterns learned from one telecom context may not generalise to other industries or regions.</li>
+                <li><strong>Class imbalance trade-offs:</strong> Class weighting improves recall on churners but increases false positives compared to unweighted training.</li>
+                <li><strong>No external factors:</strong> Competitor pricing, network outages, and macroeconomic shifts are not in the feature set.</li>
+                <li><strong>Basic fairness audit:</strong> We checked gender and senior-citizen subgroups only; a production system would need more exhaustive fairness testing.</li>
+                <li><strong>Synthetic variant:</strong> If generated data is used, statistical properties approximate but do not identical-match real telco populations.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Future Work -->
+    <div class="academic-section">
+        <h2>Future Work</h2>
+        <div class="prose-block">
+            <ol>
+                <li><strong>SHAP explainability:</strong> Per-prediction feature attributions so retention teams understand why a specific customer was flagged.</li>
+                <li><strong>Real-time pipelines:</strong> Integrate streaming billing and usage data instead of batch CSV snapshots.</li>
+                <li><strong>Exhaustive fairness auditing:</strong> Expand to intersectional groups, equalised-odds metrics, and bias mitigation techniques.</li>
+                <li><strong>Production monitoring:</strong> Track model drift, calibration decay, and performance degradation after deployment.</li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- References -->
+    <div class="academic-section">
+        <h2>References</h2>
+        <ul class="reference-list">
+            <li>IBM Telco Customer Churn dataset — <em>Kaggle / IBM Sample Data</em> (public benchmark).</li>
+            <li>Pedregosa, F. et al. (2011). <em>Scikit-learn: Machine Learning in Python.</em> JMLR 12, 2825–2830.</li>
+            <li>Vafeiadis, T. et al. (2015). A comparison of machine learning techniques for customer churn prediction. <em>Simulation Modelling Practice and Theory.</em></li>
+            <li>Breiman, L. (2001). Random Forests. <em>Machine Learning</em>, 45(1), 5–32.</li>
+            <li>Friedman, J. H. (2001). Greedy function approximation: A gradient boosting machine. <em>Annals of Statistics.</em></li>
+        </ul>
+    </div>
+
+    <!-- Algorithms (existing content, params updated) -->
+    <div class="method-section">
+        <h2>Algorithms Used</h2>
+        <div class="algorithm-card">
+            <div class="algo-header">
+                <div class="algo-badge rf">RF</div>
+                <h3>Random Forest Classifier</h3>
+            </div>
+            <div class="algo-body">
+                <p>Ensemble of decision trees with <code>class_weight="balanced"</code> to address label imbalance.</p>
+                <div class="algo-params">
+                    <h5>Default Hyperparameters (pre-tuning)</h5>
+                    <ul>
+                        <li><code>n_estimators = 200</code></li>
+                        <li><code>max_depth = 15</code></li>
+                        <li><code>class_weight = balanced</code></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="algorithm-card">
+            <div class="algo-header">
+                <div class="algo-badge gb">GB</div>
+                <h3>Gradient Boosting Classifier</h3>
+            </div>
+            <div class="algo-body">
+                <p>Additive ensemble with balanced sample weights on the training set.</p>
+                <div class="algo-params">
+                    <h5>Default Hyperparameters (pre-tuning)</h5>
+                    <ul>
+                        <li><code>n_estimators = 150</code></li>
+                        <li><code>max_depth = 5</code></li>
+                        <li><code>learning_rate = 0.1</code></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="algorithm-card">
+            <div class="algo-header">
+                <div class="algo-badge lr">LR</div>
+                <h3>Logistic Regression (Selected &amp; Tuned)</h3>
+            </div>
+            <div class="algo-body">
+                <p>Selected as best model after GridSearchCV. Linear, interpretable coefficients; strong ROC AUC on this dataset.</p>
+                <div class="algo-params">
+                    <h5>Tuned Hyperparameters</h5>
+                    <ul>
+                        <li><code>C = {{ params.get('C', '0.01') }}</code></li>
+                        <li><code>solver = {{ params.get('solver', 'lbfgs') }}</code></li>
+                        <li><code>class_weight = balanced</code></li>
+                        <li><code>random_state = {{ v.get('random_state', 42) }}</code></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Evaluation Metrics -->
+    <div class="method-section">
+        <h2>Evaluation Metrics</h2>
+        <div class="metrics-explained">
+            <div class="metric-explain-card">
+                <h4>Accuracy</h4>
+                <div class="metric-formula">(TP + TN) / (TP + TN + FP + FN)</div>
+                <p>Overall correctness — misleading alone when ~70% of customers are retained.</p>
+            </div>
+            <div class="metric-explain-card">
+                <h4>Precision</h4>
+                <div class="metric-formula">TP / (TP + FP)</div>
+                <p>Of predicted churners, how many actually churned.</p>
+            </div>
+            <div class="metric-explain-card">
+                <h4>Recall</h4>
+                <div class="metric-formula">TP / (TP + FN)</div>
+                <p>Of actual churners, how many were caught — critical for retention outreach.</p>
+            </div>
+            <div class="metric-explain-card">
+                <h4>F1 Score</h4>
+                <div class="metric-formula">2 × (P × R) / (P + R)</div>
+                <p>Balance between precision and recall under imbalance.</p>
+            </div>
+            <div class="metric-explain-card">
+                <h4>ROC AUC</h4>
+                <div class="metric-formula">Area Under ROC Curve</div>
+                <p>Primary model-selection metric — threshold-independent discriminative ability.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confusion Matrix with live values -->
+    {% set cm = stats.get('best_model_confusion_matrix', [[0,0],[0,0]]) %}
+    <div class="method-section">
+        <h2>Confusion Matrix — {{ stats.get('best_model', 'Best Model') }} (Test Set)</h2>
+        <div class="confusion-matrix-visual">
+            <table class="cm-table">
+                <tr>
+                    <td class="cm-empty"></td>
+                    <td class="cm-header">Predicted: Retained</td>
+                    <td class="cm-header">Predicted: Churned</td>
+                </tr>
+                <tr>
+                    <td class="cm-header">Actual: Retained</td>
+                    <td class="cm-cell tn">{{ cm[0][0] }}<br><small>TN</small></td>
+                    <td class="cm-cell fp">{{ cm[0][1] }}<br><small>FP</small></td>
+                </tr>
+                <tr>
+                    <td class="cm-header">Actual: Churned</td>
+                    <td class="cm-cell fn">{{ cm[1][0] }}<br><small>FN</small></td>
+                    <td class="cm-cell tp">{{ cm[1][1] }}<br><small>TP</small></td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

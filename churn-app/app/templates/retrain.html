@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Retrain Simulation{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header reveal">
+        <h1>Retrain simulation</h1>
+        <p>Upload labeled customer data to simulate retraining on a combined dataset. The production model is <em>not</em> overwritten until you run <code>train_model.py</code> and restart the app.</p>
+    </div>
+
+    <div class="card reveal" style="max-width:720px;margin:0 auto">
+        <div class="callout-label">Admin credentials required</div>
+        <p class="text-sm text-muted" style="margin-bottom:16px">The retrain API is protected. Enter the admin username and password from your <code>.env.local</code> (defaults: <code>admin</code> / <code>churnguard</code>).</p>
+        <div class="form-grid" style="max-width:480px;margin-bottom:24px">
+            <div class="form-group">
+                <label for="adminUser">Admin username</label>
+                <input type="text" id="adminUser" name="adminUser" autocomplete="username" value="admin">
+            </div>
+            <div class="form-group">
+                <label for="adminPass">Admin password</label>
+                <input type="password" id="adminPass" name="adminPass" autocomplete="current-password" placeholder="From ADMIN_PASSWORD in .env.local">
+            </div>
+        </div>
+
+        <div class="upload-zone" id="retrainUploadZone" role="button" tabindex="0" aria-label="Upload labeled CSV for retrain simulation">
+            <input type="file" id="retrainFile" accept=".csv" hidden>
+            <i data-lucide="refresh-cw" style="width:32px;height:32px;color:var(--text-muted);margin-bottom:12px" aria-hidden="true"></i>
+            <p><strong>Upload labeled CSV</strong> (must include <code>Churn</code> column)</p>
+        </div>
+        <div id="retrainErrors" class="alert alert-error hidden" role="alert"></div>
+        <div id="retrainProgress" class="hidden" style="margin-top:20px" aria-live="polite">
+            <div class="skeleton" style="height:8px;border-radius:4px"></div>
+            <p class="text-sm text-muted" style="margin-top:8px">Simulating retrain…</p>
+        </div>
+        <div id="retrainResults" class="hidden" style="margin-top:32px">
+            <p class="text-sm text-muted" id="retrainNote"></p>
+            <div class="grid-2" style="margin-top:20px" id="retrainCompare"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/retrain.js"></script>
+{% endblock %}

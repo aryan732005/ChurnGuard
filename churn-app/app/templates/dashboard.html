@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}Analytics Dashboard{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header reveal">
+        <h1>Dashboard</h1>
+        <p>Churn trends, customer risk, retention actions, and estimated ROI.</p>
+        <p class="text-sm text-muted" id="dashDataSource" style="margin-top:8px">Data source: loading…</p>
+    </div>
+
+    <div class="disclosure reveal" style="margin-bottom:20px">
+        <button type="button" class="disclosure-trigger" aria-expanded="false" data-target="dash-filters">
+            <span class="disclosure-title-wrap">
+                <span class="disclosure-title">Filters</span>
+                <span class="disclosure-subtitle">Contract type and tenure range</span>
+            </span>
+            <i data-lucide="chevron-down" class="disclosure-chevron"></i>
+        </button>
+        <div class="disclosure-panel" id="dash-filters">
+            <div class="disclosure-body filters">
+                <div class="form-group">
+                    <label>Contract</label>
+                    <select id="filterContract">
+                        <option value="">All contracts</option>
+                        <option>Month-to-month</option>
+                        <option>One year</option>
+                        <option>Two year</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Min tenure</label>
+                    <input type="number" id="filterTenureMin" value="0" min="0" max="72">
+                </div>
+                <div class="form-group">
+                    <label>Max tenure</label>
+                    <input type="number" id="filterTenureMax" value="72" min="0" max="72">
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" id="applyFilters">Apply</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid-4 reveal" id="summaryCards">
+        <div class="card skeleton" style="height:100px"></div>
+        <div class="card skeleton" style="height:100px"></div>
+        <div class="card skeleton" style="height:100px"></div>
+        <div class="card skeleton" style="height:100px"></div>
+    </div>
+
+    <div class="disclosure reveal" style="margin-bottom:20px" id="driftDisclosure">
+        <button type="button" class="disclosure-trigger" aria-expanded="false" data-target="drift-panel">
+            <span class="disclosure-title-wrap">
+                <span class="disclosure-title">Data drift</span>
+                <span class="disclosure-subtitle"><span class="drift-pill" id="driftPill">—</span> vs training distribution</span>
+            </span>
+            <i data-lucide="chevron-down" class="disclosure-chevron"></i>
+        </button>
+        <div class="disclosure-panel" id="drift-panel">
+            <div class="disclosure-body">
+                <p class="text-sm text-muted" id="driftNote"></p>
+                <div class="table-wrap" style="margin-top:12px">
+                    <table><thead><tr><th>Feature</th><th>PSI</th><th>KS</th><th>Status</th></tr></thead>
+                    <tbody id="driftBody"><tr><td colspan="4" class="text-muted">Upload a batch CSV to compute drift</td></tr></tbody></table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid-2 section-sm reveal">
+        <div class="card">
+            <h3>Churn rate by tenure</h3>
+            <div id="trendChart" class="chart-container tall skeleton"></div>
+        </div>
+        <div class="card">
+            <h3>Feature importance</h3>
+            <div id="importanceChart" class="chart-container tall skeleton"></div>
+        </div>
+    </div>
+
+    <div class="card section-sm reveal">
+        <h3>Customer risk table</h3>
+        <div class="table-wrap" style="max-height:420px;overflow:auto;margin-top:16px">
+            <table id="riskTable">
+                <thead><tr>
+                    <th data-sort="customer_id">Customer</th>
+                    <th data-sort="contract">Contract</th>
+                    <th data-sort="tenure">Tenure</th>
+                    <th data-sort="monthly_charges">Monthly $</th>
+                    <th data-sort="churn_probability">Probability</th>
+                    <th data-sort="risk_level">Risk</th>
+                    <th>Top reasons</th>
+                    <th>Recommended action</th>
+                </tr></thead>
+                <tbody id="riskBody"><tr><td colspan="8" class="text-muted">Loading…</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="disclosure reveal" style="margin-top:24px">
+        <button type="button" class="disclosure-trigger" aria-expanded="false" data-target="roi-panel">
+            <span class="disclosure-title-wrap">
+                <span class="disclosure-title">Retention ROI calculator</span>
+                <span class="disclosure-subtitle">Estimate net savings from a retention campaign</span>
+            </span>
+            <i data-lucide="chevron-down" class="disclosure-chevron"></i>
+        </button>
+        <div class="disclosure-panel" id="roi-panel">
+            <div class="disclosure-body">
+                <div class="form-grid" style="max-width:640px">
+                    <div class="form-group"><label>At-risk customers</label><input type="number" id="roiAtRisk" value="10" min="0"></div>
+                    <div class="form-group"><label>Avg monthly revenue ($)</label><input type="number" id="roiRevenue" value="70" min="0" step="0.01"></div>
+                    <div class="form-group"><label>Cost per offer ($)</label><input type="number" id="roiOffer" value="15" min="0" step="0.01"></div>
+                    <div class="form-group"><label>Lifetime (months)</label><input type="number" id="roiLifetime" value="24" min="1"></div>
+                    <div class="form-group full">
+                        <label>Success rate: <span id="roiSuccessVal">25</span>%</label>
+                        <input type="range" id="roiSuccess" min="5" max="60" value="25" style="width:100%">
+                    </div>
+                </div>
+                <div class="grid-3" style="margin-top:20px" id="roiResults">
+                    <div class="card flat"><div class="card-title">Est. retained</div><div class="card-value" id="roiRetained">—</div></div>
+                    <div class="card flat"><div class="card-title">Gross saved</div><div class="card-value" id="roiGross">—</div></div>
+                    <div class="card flat"><div class="card-title">Net savings</div><div class="card-value" id="roiNet">—</div></div>
+                </div>
+                <p class="text-sm text-muted" style="margin-top:12px" id="roiCalibNote"></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="disclosure reveal" style="margin-top:24px">
+        <button type="button" class="disclosure-trigger" aria-expanded="false" data-target="cohort-panel">
+            <span class="disclosure-title-wrap">
+                <span class="disclosure-title">Retention impact simulator</span>
+                <span class="disclosure-subtitle">6-month revenue projection — do nothing vs retain top X%</span>
+            </span>
+            <i data-lucide="chevron-down" class="disclosure-chevron"></i>
+        </button>
+        <div class="disclosure-panel" id="cohort-panel">
+            <div class="disclosure-body">
+                <label class="text-sm">Retain top <span id="cohortPctVal">15</span>% highest-risk customers</label>
+                <input type="range" id="cohortPct" min="5" max="30" value="15" style="width:100%;margin:12px 0">
+                <div id="cohortChart" class="chart-container tall"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/dashboard.js"></script>
+{% endblock %}

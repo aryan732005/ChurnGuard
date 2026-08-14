@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% block title %}ChurnGuard — Predict churn before it costs you{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="hero-mesh"></div>
+    <div id="heroChart" class="hero-chart-bg"></div>
+    <div class="container hero-content reveal">
+        <h1>Predict churn before it costs you.</h1>
+        <p>Self-hosted churn analytics — score customers, compare models, and act on retention insights.</p>
+        <div class="hero-cta">
+            <a href="/predict" class="btn btn-primary">Try the Demo</a>
+            <a href="#interest" class="btn btn-secondary">Get updates</a>
+        </div>
+    </div>
+</section>
+
+<section class="section-sm">
+    <div class="container reveal">
+        <p class="text-sm text-muted" id="dataSourceLabel" style="margin-bottom:12px">Data source: loading…</p>
+        <div class="grid-4" id="landingStats">
+            <div class="card"><div class="card-title">Customers</div><div class="card-value" data-stat="customers">—</div></div>
+            <div class="card"><div class="card-title">Churn rate</div><div class="card-value" data-stat="churn">—</div></div>
+            <div class="card"><div class="card-title">ROC AUC</div><div class="card-value" data-stat="auc">—</div></div>
+            <div class="card"><div class="card-title">Models evaluated</div><div class="card-value" data-stat="models">—</div></div>
+        </div>
+    </div>
+</section>
+
+<section class="section-sm container reveal">
+    <div class="card flat" id="valueTranslation">
+        <div class="callout-label">Business value</div>
+        <p class="text-muted" style="margin-top:8px" id="valueText">Computing from model-scored customers…</p>
+    </div>
+</section>
+
+<section class="section-sm container reveal">
+    <div class="card">
+        <h3>How this works</h3>
+        <p class="text-muted text-sm" style="margin-top:8px">
+            ChurnGuard is <strong>self-hosted churn prediction software</strong> — FastAPI + scikit-learn you deploy on your own infrastructure.
+            Connect your customer data (or start with the included IBM Telco benchmark), train models, and serve predictions through the web UI and REST API.
+        </p>
+        <p class="text-sm text-muted" style="margin-top:12px">
+            <strong>Try the Demo</strong> → live single-customer scoring at <a href="/predict">/predict</a> with explainable top factors.
+            Dashboard, batch scoring, experiments, and model insights are available from the nav.
+        </p>
+    </div>
+</section>
+
+<section class="section-sm container reveal">
+    <div class="card">
+        <h3>Impact calculator</h3>
+        <p class="text-sm text-muted" style="margin-top:8px">Estimate revenue saved if you act on the model's highest-risk segment.</p>
+        <div class="form-grid" style="max-width:640px;margin-top:16px">
+            <div class="form-group"><label for="impactRevenue">Avg monthly revenue per customer ($)</label><input type="number" id="impactRevenue" value="70" min="0" step="0.01" aria-label="Average monthly revenue per customer in dollars"></div>
+            <div class="form-group"><label for="impactCapacity">Retention outreach capacity (customers)</label><input type="number" id="impactCapacity" value="50" min="1" aria-label="Number of customers your team can outreach to"></div>
+            <div class="form-group"><label for="impactTopPct">Top-risk segment (%)</label><input type="number" id="impactTopPct" value="10" min="1" max="50" aria-label="Top risk segment percentage"></div>
+            <div class="form-group full"><label for="impactSuccess">Success rate: <span id="impactSuccessVal">25</span>%</label><input type="range" id="impactSuccess" min="5" max="60" value="25" style="width:100%" aria-valuemin="5" aria-valuemax="60" aria-valuenow="25"></div>
+        </div>
+        <div class="grid-3" style="margin-top:20px">
+            <div class="card flat"><div class="card-title">Customers to contact</div><div class="card-value" id="impactActionable">—</div></div>
+            <div class="card flat"><div class="card-title">Est. retained</div><div class="card-value" id="impactRetained">—</div></div>
+            <div class="card flat"><div class="card-title">Net savings</div><div class="card-value" id="impactNet">—</div></div>
+        </div>
+        <p class="text-sm text-muted" style="margin-top:12px" id="impactNote">Illustrative estimate — adjust inputs to match your business.</p>
+    </div>
+</section>
+
+<section class="section-sm container reveal" id="interest">
+    <div class="card flat">
+        <h3>Interested in ChurnGuard?</h3>
+        <p class="text-sm text-muted" style="margin-top:8px">Leave your email for deployment guides, integrations, or enterprise support.</p>
+        <form id="interestForm" style="margin-top:16px;max-width:480px" aria-label="Contact interest form">
+            <div class="form-group"><label for="interestEmail">Email</label><input type="email" id="interestEmail" name="email" required placeholder="you@company.com" autocomplete="email"></div>
+            <div class="form-group"><label for="interestMessage">Message (optional)</label><textarea id="interestMessage" name="message" rows="3" placeholder="What would you use this for?" aria-label="Optional message"></textarea></div>
+            <button type="submit" class="btn btn-primary">Send</button>
+            <p class="text-sm text-muted" style="margin-top:8px" id="interestStatus"></p>
+        </form>
+    </div>
+</section>
+
+<section class="section-sm container reveal">
+    <div class="card flat video-placeholder">
+        <p class="text-sm text-muted" style="margin-bottom:12px">Product walkthrough</p>
+        <video controls poster="/static/img/demo-poster.svg" style="width:100%;max-width:720px;border-radius:8px;background:#F3F4F6" preload="none">
+            <source src="/static/video/demo.mp4" type="video/mp4">
+        </video>
+        <p class="text-sm text-muted" style="margin-top:8px">Replace <code>static/video/demo.mp4</code> with your recorded walkthrough GIF/video.</p>
+    </div>
+</section>
+
+<section class="section-sm container reveal">
+    <div class="disclosure">
+        <button type="button" class="disclosure-trigger" aria-expanded="false" data-target="landing-features">
+            <span class="disclosure-title-wrap">
+                <span class="disclosure-title">Platform capabilities</span>
+                <span class="disclosure-subtitle">Prediction, batch scoring, insights, and more</span>
+            </span>
+            <i data-lucide="chevron-down" class="disclosure-chevron"></i>
+        </button>
+        <div class="disclosure-panel" id="landing-features">
+            <div class="disclosure-body">
+                <div class="grid-3">
+                    <div class="card flat"><h3>Live prediction</h3><p class="text-muted text-sm">Gauge, confidence, risk badge, what-if simulator.</p></div>
+                    <div class="card flat"><h3>Dashboard</h3><p class="text-muted text-sm">Risk table, recommended actions, ROI calculator.</p></div>
+                    <div class="card flat"><h3>Model insights</h3><p class="text-muted text-sm">ROC, confusion matrix, fairness, error analysis.</p></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    fetch('/api/metrics').then(function (r) { return r.json(); }).then(function (m) {
+        document.querySelector('[data-stat="customers"]').textContent = (m.total_customers || 7043).toLocaleString();
+        document.querySelector('[data-stat="churn"]').textContent = (m.churn_rate || 29.9) + '%';
+        document.querySelector('[data-stat="auc"]').textContent = (function () {
+            var auc = m.best_test_metrics && m.best_test_metrics.roc_auc;
+            var val = typeof auc === 'object' ? auc.display || auc.mean : auc;
+            if (typeof val === 'number') return (val * 100).toFixed(1) + '%';
+            return val || '—';
+        })();
+        document.querySelector('[data-stat="models"]').textContent = Object.keys(m.model_results || {}).length || '5';
+        var ds = m.dataset || {};
+        var records = ds.records || m.total_customers || 7043;
+        document.getElementById('dataSourceLabel').textContent =
+            'Data source: ' + (ds.name || 'Telco Customer Churn') + ' (' + records.toLocaleString() + ' records) — public benchmark, not live production data';
+    });
+
+    fetch('/api/business-impact?top_pct=10').then(function (r) { return r.json(); }).then(function (b) {
+        document.getElementById('valueText').textContent =
+            'Flagging the top ' + b.top_pct + '% highest-risk customers would let a team focus retention effort on ~' +
+            b.customer_count.toLocaleString() + ' customers responsible for ~$' +
+            b.monthly_revenue_at_risk.toLocaleString() + '/month (~$' +
+            b.annual_revenue_at_risk.toLocaleString() + '/year) in at-risk monthly revenue. ' +
+            (b.note || '');
+        document.getElementById('impactRevenue').value = b.avg_monthly_charge || 70;
+        updateImpact();
+    }).catch(function () {
+        document.getElementById('valueText').textContent =
+            'Business value estimate unavailable — start the app and run train_model.py to load the dataset.';
+    });
+
+    function updateImpact() {
+        var body = {
+            avg_monthly_revenue: parseFloat(document.getElementById('impactRevenue').value) || 70,
+            retention_capacity: parseInt(document.getElementById('impactCapacity').value, 10) || 50,
+            top_pct: parseFloat(document.getElementById('impactTopPct').value) || 10,
+            success_rate_pct: parseFloat(document.getElementById('impactSuccess').value) || 25,
+            lifetime_months: 24,
+            offer_cost: 15,
+        };
+        fetch('/api/impact-calculator', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        }).then(function (r) { return r.json(); }).then(function (d) {
+            document.getElementById('impactActionable').textContent = d.actionable_customers || '—';
+            document.getElementById('impactRetained').textContent = d.estimated_retained || '—';
+            document.getElementById('impactNet').textContent = d.net_savings != null ? '$' + d.net_savings.toLocaleString() : '—';
+            document.getElementById('impactNote').textContent = d.assumptions_note || '';
+        });
+    }
+
+    document.getElementById('impactSuccess').addEventListener('input', function () {
+        document.getElementById('impactSuccessVal').textContent = this.value;
+        updateImpact();
+    });
+    ['impactRevenue', 'impactCapacity', 'impactTopPct'].forEach(function (id) {
+        document.getElementById(id).addEventListener('change', updateImpact);
+    });
+
+    document.getElementById('interestForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var status = document.getElementById('interestStatus');
+        fetch('/api/interest', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: document.getElementById('interestEmail').value,
+                message: document.getElementById('interestMessage').value,
+                source: 'landing',
+            }),
+        }).then(function (r) { return r.json(); }).then(function (d) {
+            status.textContent = d.message || 'Thanks!';
+            status.style.color = 'var(--accent)';
+        }).catch(function () {
+            status.textContent = 'Could not submit — try again or email directly.';
+        });
+    });
+
+    if (typeof Plotly !== 'undefined' && document.getElementById('heroChart')) {
+        var x = [], y = [];
+        for (var i = 0; i < 24; i++) { x.push('M' + (i+1)); y.push(22 + Math.sin(i/3)*4 + i*0.3); }
+        Plotly.newPlot('heroChart', [{ x: x, y: y, type: 'scatter', mode: 'lines', line: { color: '#2563EB', width: 1.5 } }], {
+            paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', margin: { t: 0, b: 0, l: 0, r: 0 },
+            xaxis: { visible: false }, yaxis: { visible: false }, showlegend: false
+        }, { displayModeBar: false, responsive: true });
+    }
+});
+</script>
+{% endblock %}

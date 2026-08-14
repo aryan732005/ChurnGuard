@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+{% block title %}Model Insights{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header reveal">
+        <h1>Model insights</h1>
+        <p>Headline performance at a glance — expand sections for full evaluation depth.</p>
+        <p style="margin-top:12px"><span class="badge badge-low" id="modelVersionBadge">Model —</span></p>
+    </div>
+
+    <!-- First view: clean KPI strip -->
+    <div class="grid-4 reveal" id="metricCards">
+        <div class="card skeleton" style="height:88px"></div>
+        <div class="card skeleton" style="height:88px"></div>
+        <div class="card skeleton" style="height:88px"></div>
+        <div class="card skeleton" style="height:88px"></div>
+    </div>
+
+    <div class="card reveal" style="margin-top:20px" id="reportCard">
+        <h3>Executive report</h3>
+        <p class="text-sm text-muted" style="margin-top:8px">Download the PDF summary or email it to a stakeholder.</p>
+        <div style="margin-top:16px;display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+            <a href="/api/executive-summary.pdf" class="btn btn-secondary" download>Download PDF</a>
+        </div>
+        <form id="reportEmailForm" style="margin-top:20px;max-width:480px" aria-label="Email executive report">
+            <div class="form-group">
+                <label for="reportEmail">Send to email</label>
+                <input type="email" id="reportEmail" name="email" required placeholder="stakeholder@company.com" autocomplete="email">
+            </div>
+            <button type="submit" class="btn btn-primary">Email report</button>
+            <p class="text-sm text-muted" style="margin-top:8px" id="reportStatus" role="status"></p>
+        </form>
+    </div>
+
+    <!-- Methodology -->
+    <div class="disclosure reveal" style="margin-top:20px">
+        <button type="button" class="disclosure-trigger" aria-expanded="false" data-target="disc-methodology">
+            <span class="disclosure-title-wrap">
+                <span class="disclosure-title">Training methodology</span>
+                <span class="disclosure-subtitle">Split strategy, CV, class imbalance — from train_model.py</span>
+            </span>
+            <i data-lucide="chevron-down" class="disclosure-chevron"></i>
+        </button>
+        <div class="disclosure-panel" id="disc-methodology">
+            <div class="disclosure-body">
+                <ul class="text-sm text-muted case-list" id="methodologyList">
+                    <li>Loading from training config…</li>
+                </ul>
+                <p class="text-sm text-muted" style="margin-top:12px"><a href="/experiments">View experiment runs →</a></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="disclosure reveal" style="margin-top:20px">
+        <button type="button" class="disclosure-trigger" aria-expanded="false" data-target="disc-versions">
+            <span class="disclosure-title-wrap">
+                <span class="disclosure-title">Model version history</span>
+                <span class="disclosure-subtitle">Version, date, ROC AUC delta vs previous</span>
+            </span>
+            <i data-lucide="chevron-down" class="disclosure-chevron"></i>
+        </button>
+        <div class="disclosure-panel" id="disc-versions">
+            <div class="disclosure-body">
+                <div class="table-wrap"><table><thead><tr><th>Version</th><th>Date</th><th>ROC AUC</th><th>Δ vs prev</th></tr></thead>
+                <tbody id="versionBody"></tbody></table></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data integrity note -->
+    <div class="card reveal flat" style="margin-top:20px" id="dataIntegrityCard">
+        <div class="callout-label">Data integrity</div>
+        <p class="text-sm text-muted" id="dataIntegrityNote" style="margin-top:8px">Loading audit summary…</p>
+    </div>
+
+    <!-- Baseline vs final -->
+    <div class="card reveal" style="margin-top:20px" id="modelSelectionCard">
+        <div class="callout-label">Model selection</div>
+        <p class="text-sm" id="selectionNote" style="margin-top:8px">Loading…</p>
+        <div class="grid-2" style="margin-top:16px" id="baselineCompare"></div>
+    </div>
+
+    <!-- Tabbed detail area -->
+    <div class="tab-group reveal" data-tab-group style="margin-top:24px">
+        <div class="tab-bar">
+            <button type="button" class="tab active" data-tab="metrics">Metrics</button>
+            <button type="button" class="tab" data-tab="curves">ROC &amp; matrix</button>
+            <button type="button" class="tab" data-tab="features">Feature importance</button>
+            <button type="button" class="tab" data-tab="calibration">Calibration</button>
+            <button type="button" class="tab" data-tab="fairness">Fairness</button>
+        </div>
+
+        <div class="tab-panel active" data-tab-panel="metrics">
+            <div class="disclosure" style="margin-top:16px">
+                <button type="button" class="disclosure-trigger" aria-expanded="false" data-target="disc-imbalance">
+                    <span class="disclosure-title-wrap">
+                        <span class="disclosure-title">Class imbalance handling</span>
+                        <span class="disclosure-subtitle">Why accuracy alone is misleading</span>
+                    </span>
+                    <i data-lucide="chevron-down" class="disclosure-chevron"></i>
+                </button>
+                <div class="disclosure-panel" id="disc-imbalance">
+                    <div class="disclosure-body">
+                        <p class="text-sm text-muted" id="imbalanceText"></p>
+                        <div class="table-wrap" style="margin-top:16px">
+                            <table><thead><tr><th>Class</th><th>Precision</th><th>Recall</th><th>F1</th><th>Support</th></tr></thead>
+                            <tbody id="perClassBody"></tbody></table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="disclosure" style="margin-top:12px">
+                <button type="button" class="disclosure-trigger" aria-expanded="false" data-target="disc-models">
+                    <span class="disclosure-title-wrap">
+                        <span class="disclosure-title">Full model comparison</span>
+                        <span class="disclosure-subtitle">All candidates vs baseline</span>
+                    </span>
+                    <i data-lucide="chevron-down" class="disclosure-chevron"></i>
+                </button>
+                <div class="disclosure-panel" id="disc-models">
+                    <div class="disclosure-body">
+                        <div class="table-wrap"><table id="modelTable"><thead><tr>
+                            <th>Model</th><th>Acc</th><th>Prec</th><th>Rec</th><th>F1</th><th>ROC AUC</th><th>PR-AUC</th>
+                        </tr></thead><tbody id="modelBody"></tbody></table></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-panel" data-tab-panel="curves">
+            <div class="grid-2" style="margin-top:16px">
+                <div class="card"><h3>ROC curve</h3><div id="rocChart" class="chart-container tall"></div></div>
+                <div class="card"><h3>Confusion matrix</h3><div id="cmChart" class="chart-container tall"></div></div>
+            </div>
+            <div class="disclosure" style="margin-top:16px">
+                <button type="button" class="disclosure-trigger" aria-expanded="false" data-target="disc-threshold">
+                    <span class="disclosure-title-wrap">
+                        <span class="disclosure-title">Business threshold</span>
+                        <span class="disclosure-subtitle" id="thresholdSubtitle">Cost-optimised cutoff · linked to ROI calculator</span>
+                    </span>
+                    <i data-lucide="chevron-down" class="disclosure-chevron"></i>
+                </button>
+                <div class="disclosure-panel" id="disc-threshold">
+                    <div class="disclosure-body">
+                        <p class="text-sm text-muted" id="thresholdReasoning"></p>
+                        <p class="text-sm" style="margin-top:12px">Cutoff: <strong id="threshVal">0.50</strong> (optimal: <strong id="optThreshVal">—</strong>)</p>
+                        <input type="range" id="threshSlider" min="10" max="90" value="50" style="width:100%;margin:12px 0">
+                        <div id="threshChart" class="chart-container"></div>
+                        <div id="costChart" class="chart-container" style="margin-top:16px"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-panel" data-tab-panel="features">
+            <p class="text-sm text-muted" style="margin-top:16px">Top features driving the selected model's predictions (coefficient magnitude for Logistic Regression). SHAP attributions describe model reasoning, not causal effects.</p>
+            <div class="card" style="margin-top:16px">
+                <div id="featureImportanceChart" class="chart-container tall"></div>
+            </div>
+        </div>
+
+        <div class="tab-panel" data-tab-panel="calibration">
+            <p class="text-sm text-muted" style="margin-top:16px" id="calibrationNote"></p>
+            <div class="card" style="margin-top:16px">
+                <h3>Reliability diagram</h3>
+                <div id="calibrationChart" class="chart-container tall"></div>
+            </div>
+            <p class="text-sm text-muted" style="margin-top:12px" id="calibrationRoiNote"></p>
+        </div>
+
+        <div class="tab-panel" data-tab-panel="fairness">
+            <p class="text-sm text-muted" style="margin-top:16px" id="fairnessNote"></p>
+            <p class="text-sm text-muted" style="margin-top:8px">Error rate reflects both false positives (predicted churn, stayed) and false negatives (predicted stay, churned). Review segment gaps before deploying retention campaigns.</p>
+            <div id="fairnessTables" style="margin-top:16px"></div>
+        </div>
+    </div>
+
+    <!-- Error analysis: collapsed by default -->
+    <div class="disclosure reveal" style="margin-top:24px">
+        <button type="button" class="disclosure-trigger" aria-expanded="false" data-target="disc-errors">
+            <span class="disclosure-title-wrap">
+                <span class="disclosure-title">Error analysis</span>
+                <span class="disclosure-subtitle">False positives &amp; negatives with SHAP explanations</span>
+            </span>
+            <i data-lucide="chevron-down" class="disclosure-chevron"></i>
+        </button>
+        <div class="disclosure-panel" id="disc-errors" data-on-open="true">
+            <div class="disclosure-body">
+                <p class="text-sm text-muted" id="errorExplainNote"></p>
+                <div id="errorCases" class="error-cases-grid"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/insights.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var form = document.getElementById('reportEmailForm');
+    if (!form) return;
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var status = document.getElementById('reportStatus');
+        status.textContent = 'Sending…';
+        fetch('/api/report/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: document.getElementById('reportEmail').value }),
+        }).then(function (r) { return r.json(); }).then(function (d) {
+            status.textContent = d.message || 'Done.';
+        }).catch(function () {
+            status.textContent = 'Could not send — try downloading the PDF instead.';
+        });
+    });
+});
+</script>
+{% endblock %}

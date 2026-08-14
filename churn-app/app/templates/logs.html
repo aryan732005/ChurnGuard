@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Logs — ChurnGuard Admin{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header reveal">
+        <h1>Application logs</h1>
+        <p>Recent structured log entries (admin). Protected route.</p>
+    </div>
+
+    <div class="card reveal">
+        <p class="text-sm text-muted" id="latencySummary">Latency stats loading…</p>
+        <div class="table-wrap" style="margin-top:16px;max-height:520px;overflow:auto">
+            <table class="log-table">
+                <thead><tr><th>Time</th><th>Level</th><th>Logger</th><th>Message</th></tr></thead>
+                <tbody id="logBody"><tr><td colspan="4" class="text-muted">Loading…</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/logs.js"></script>
+{% endblock %}
