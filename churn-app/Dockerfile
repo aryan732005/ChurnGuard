@@ -10,6 +10,7 @@ COPY churn-app/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY churn-app/app ./app
+COPY ml /app/ml
 COPY data /app/data
 COPY models /app/models
 COPY docs /app/docs
