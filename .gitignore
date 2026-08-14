@@ -29,6 +29,7 @@ node_modules/
 Thumbs.db
 
 # Runtime / queued user data
+data/users.json
 data/pending_report_emails/
 data/interest_leads.json
 churn-app/logs/
