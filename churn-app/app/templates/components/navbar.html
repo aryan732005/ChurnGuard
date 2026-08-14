@@ -18,7 +18,6 @@
             <button type="button" class="icon-btn" id="cmdToggle" aria-label="Command palette">
                 <i data-lucide="command"></i>
             </button>
-            {% if clerk_enabled %}
             <div id="clerk-signed-out" class="clerk-auth-group">
                 <a href="/sign-in" class="btn btn-secondary btn-sm">Sign in</a>
                 <a href="/sign-up" class="btn btn-primary btn-sm hide-mobile">Sign up</a>
@@ -26,7 +25,6 @@
             <div id="clerk-signed-in" class="clerk-auth-group hidden">
                 <div id="clerk-user-button"></div>
             </div>
-            {% endif %}
             <a href="/predict" class="btn btn-primary btn-sm hide-mobile">Try the Demo</a>
         </div>
     </div>

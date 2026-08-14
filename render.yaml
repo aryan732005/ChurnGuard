@@ -19,3 +19,9 @@ services:
         value: admin
       - key: ADMIN_PASSWORD
         generateValue: true
+      - key: CLERK_PUBLISHABLE_KEY
+        value: pk_test_c3R1bm5pbmctYWxwYWNhLTY3LmNsZXJrLmFjY291bnRzLmRldiQ
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        value: https://churnguard-lvcf.onrender.com,http://127.0.0.1:8000,http://localhost:8000
