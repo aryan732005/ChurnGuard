@@ -115,7 +115,22 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    fetch('/api/metrics').then(function (r) { return r.json(); }).then(function (m) {
+    function fetchJsonWithRetry(url, opts, retries, delayMs) {
+        retries = retries == null ? 5 : retries;
+        delayMs = delayMs == null ? 3000 : delayMs;
+        return fetch(url, opts).then(function (r) {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        }).catch(function (err) {
+            if (retries <= 0) throw err;
+            var label = document.getElementById('dataSourceLabel');
+            if (label) label.textContent = 'Data source: waking server (Render free tier cold start)…';
+            return new Promise(function (resolve) { setTimeout(resolve, delayMs); })
+                .then(function () { return fetchJsonWithRetry(url, opts, retries - 1, delayMs); });
+        });
+    }
+
+    fetchJsonWithRetry('/api/metrics').then(function (m) {
         document.querySelector('[data-stat="customers"]').textContent = (m.total_customers || 7043).toLocaleString();
         document.querySelector('[data-stat="churn"]').textContent = (m.churn_rate || 29.9) + '%';
         document.querySelector('[data-stat="auc"]').textContent = (function () {
@@ -129,9 +144,12 @@ document.addEventListener('DOMContentLoaded', function () {
         var records = ds.records || m.total_customers || 7043;
         document.getElementById('dataSourceLabel').textContent =
             'Data source: ' + (ds.name || 'Telco Customer Churn') + ' (' + records.toLocaleString() + ' records) — public benchmark, not live production data';
+    }).catch(function () {
+        document.getElementById('dataSourceLabel').textContent =
+            'Data source: Telco Customer Churn (7,043 records) — server waking up; refresh in a moment.';
     });
 
-    fetch('/api/business-impact?top_pct=10').then(function (r) { return r.json(); }).then(function (b) {
+    fetchJsonWithRetry('/api/business-impact?top_pct=10').then(function (b) {
         document.getElementById('valueText').textContent =
             'Flagging the top ' + b.top_pct + '% highest-risk customers would let a team focus retention effort on ~' +
             b.customer_count.toLocaleString() + ' customers responsible for ~$' +

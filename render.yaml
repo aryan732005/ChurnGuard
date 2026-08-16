@@ -15,6 +15,10 @@ services:
         value: "8000"
       - key: PYTHONUNBUFFERED
         value: "1"
+      - key: WEB_CONCURRENCY
+        value: "1"
+      - key: PUBLIC_URL
+        value: https://churnguard-lvcf.onrender.com
       - key: ADMIN_USER
         value: admin
       - key: ADMIN_PASSWORD

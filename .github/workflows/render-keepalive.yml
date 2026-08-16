@@ -1,0 +1,14 @@
+# Keeps the Render free-tier service warm (spins down after ~15 min idle otherwise).
+name: Render keepalive
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping ChurnGuard health
+        run: curl -fsS --retry 3 --retry-delay 10 https://churnguard-lvcf.onrender.com/health

@@ -31,6 +31,7 @@ class ChurnPredictor:
         self.calibration_method: str = ""
         self.stats: dict = {}
         self.df: pd.DataFrame | None = None
+        self._csv_path: Path | None = None
         self._shap_explainer = None
         self.last_drift: dict = {}
         self.load()
@@ -61,8 +62,15 @@ class ChurnPredictor:
             self.stats = json.loads(stats_path.read_text(encoding="utf-8"))
 
         csv_path = DATA_DIR / "telco_churn.csv"
-        if csv_path.exists():
-            self.df = pd.read_csv(csv_path)
+        self._csv_path = csv_path if csv_path.exists() else None
+
+    def _ensure_df(self) -> pd.DataFrame | None:
+        if self.df is not None:
+            return self.df
+        if self._csv_path is None:
+            return None
+        self.df = pd.read_csv(self._csv_path)
+        return self.df
 
     @property
     def ready(self) -> bool:
@@ -143,10 +151,13 @@ class ChurnPredictor:
         if getattr(self, "_scores_cache_version", None) == version and getattr(self, "_scores_cache", None):
             return self._scores_cache
 
-        if self.df is None or not self.ready:
+        if not self.ready:
+            return []
+        df = self._ensure_df()
+        if df is None:
             return []
 
-        subset = self.df.drop(columns=["Churn"], errors="ignore")
+        subset = df.drop(columns=["Churn"], errors="ignore")
         X_scaled = self._encode_dataframe(subset)
         probas = self._calibrate_array(self.model.predict_proba(X_scaled)[:, 1])
 
@@ -424,7 +435,8 @@ class ChurnPredictor:
         n = max(1, int(len(ranked) * top_pct / 100))
         top = ranked[:n]
         monthly_rev = sum(r["monthly_charges"] for r in top)
-        avg_charge = float(self.df["MonthlyCharges"].mean()) if self.df is not None and len(self.df) else 0.0
+        df = self._ensure_df()
+        avg_charge = float(df["MonthlyCharges"].mean()) if df is not None and len(df) else 0.0
 
         result = {
             "top_pct": top_pct,
@@ -489,10 +501,11 @@ class ChurnPredictor:
         return get_dashboard_cached(contract, tenure_min, tenure_max, version)
 
     def _dashboard_compute(self, contract: str = "", tenure_min: int = 0, tenure_max: int = 72) -> dict:
-        if self.df is None:
+        df = self._ensure_df()
+        if df is None:
             return {"churn_trend": [], "risk_table": [], "revenue_at_risk": 0, "summary": {}}
 
-        filtered = self.df.copy()
+        filtered = df.copy()
         if contract:
             filtered = filtered[filtered["Contract"] == contract]
         filtered = filtered[

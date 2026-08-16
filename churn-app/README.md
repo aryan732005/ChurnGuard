@@ -49,6 +49,13 @@ Optional NL explanations: `OPENAI_API_KEY=sk-...`
 
 ## Deployment & model versioning
 
+**Live production URL:** https://churnguard-lvcf.onrender.com
+
+| Environment | Stops when you close… | Notes |
+|-------------|------------------------|-------|
+| **Render (production)** | Never — runs in the cloud 24/7 | Free tier may *sleep* after ~15 min idle; first visit takes ~30–60s to wake. A GitHub Action pings `/health` every 10 min to reduce sleep. |
+| **Local (`uvicorn`)** | Terminal / Cursor / laptop sleep | For development only. Use the Render URL for demos and sharing. |
+
 ChurnGuard runs as a standard FastAPI app — locally, in Docker, or behind nginx/ALB.
 
 | Step | Action |
