@@ -11,17 +11,14 @@
         tableData = rows || [];
         var tbody = document.getElementById('riskBody');
         if (!rows.length) {
-            tbody.innerHTML = '<tr><td colspan="8" class="text-muted">No data</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="text-muted">No data</td></tr>';
             return;
         }
         tbody.innerHTML = rows.map(function (r) {
-            var reasons = (r.top_reasons && r.top_reasons.length)
-                ? r.top_reasons.join(', ')
-                : (r.top_factor || '—');
             return '<tr><td>' + r.customer_id + '</td><td>' + r.contract + '</td><td>' + r.tenure +
                 '</td><td>$' + r.monthly_charges + '</td><td>' + r.churn_probability + '%</td><td><span class="' +
-                badgeClass(r.risk_level) + '">' + r.risk_level + '</span></td><td class="text-sm">' + reasons +
-                '</td><td class="text-sm">' + (r.recommended_action || '—') + '</td></tr>';
+                badgeClass(r.risk_level) + '">' + r.risk_level + '</span></td><td class="text-sm">' +
+                (r.recommended_action || '—') + '</td></tr>';
         }).join('');
     }
 

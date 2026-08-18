@@ -572,8 +572,6 @@ class ChurnPredictor:
                 "churn_probability": round(proba * 100, 2),
                 "risk_level": risk,
                 "recommended_action": action,
-                "top_factor": factors[0]["feature"] if factors else "",
-                "top_reasons": [f["feature"] for f in factors[:3]],
                 "_proba": proba,
             })
 
