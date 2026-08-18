@@ -57,3 +57,17 @@ def test_impact_calculator_api():
     assert "actionable_customers" in data
     assert "net_savings" in data
     assert data["actionable_customers"] <= 50
+
+
+@pytest.mark.skipif(not predictor.ready, reason="Model artifacts not loaded")
+def test_dashboard_risk_table_has_mixed_bands_and_actions():
+    data = predictor.dashboard_data()
+    rows = data["risk_table"]
+    assert len(rows) == 200
+    risk_levels = {r["risk_level"] for r in rows}
+    assert "High" in risk_levels
+    assert "Medium" in risk_levels
+    assert "Low" in risk_levels
+    assert len({r["churn_probability"] for r in rows}) > 20
+    actions = {r["recommended_action"] for r in rows if r["recommended_action"] != "—"}
+    assert len(actions) >= 5

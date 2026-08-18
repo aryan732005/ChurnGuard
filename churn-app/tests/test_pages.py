@@ -7,6 +7,16 @@ from app.main import app
 client = TestClient(app, raise_server_exceptions=False)
 
 
+def test_dashboard_loads_with_risk_table():
+    response = client.get("/dashboard")
+    assert response.status_code == 200
+    assert "riskTable" in response.text
+    assert "riskBody" in response.text
+    assert "Customer risk table" in response.text
+    assert "trendChart" in response.text
+    assert "summaryCards" in response.text
+
+
 def test_experiments_page_returns_200():
     response = client.get("/experiments")
     assert response.status_code == 200

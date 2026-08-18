@@ -50,6 +50,70 @@ class ChurnPredictor:
             return "Medium"
         return "Low"
 
+    @staticmethod
+    def _select_risk_table_rows(indexed_rows: list[dict], limit: int = 200) -> list[dict]:
+        """Sample across risk bands so the table shows High, Medium, and Low customers."""
+        bands: dict[str, list[dict]] = {"High": [], "Medium": [], "Low": []}
+        for row in indexed_rows:
+            bands[row["risk_level"]].append(row)
+        for rows in bands.values():
+            rows.sort(key=lambda r: r["_proba"], reverse=True)
+
+        base, extra = divmod(limit, 3)
+        order = ["High", "Medium", "Low"]
+        selected: list[dict] = []
+        for i, band in enumerate(order):
+            take = base + (1 if i < extra else 0)
+            selected.extend(bands[band][:take])
+
+        if len(selected) < limit:
+            used = {id(row) for row in selected}
+            remaining = [row for row in indexed_rows if id(row) not in used]
+            remaining.sort(key=lambda r: r["_proba"], reverse=True)
+            selected.extend(remaining[: limit - len(selected)])
+
+        selected.sort(key=lambda r: r["_proba"], reverse=True)
+        return selected[:limit]
+
+    def _score_filtered_customers(self, filtered: pd.DataFrame) -> list[dict]:
+        """Score every customer in a filtered slice for analytics and the dashboard table."""
+        if not self.ready or filtered.empty:
+            return []
+
+        feature_cols = filtered.drop(columns=["Churn"], errors="ignore")
+        X_scaled = self._encode_dataframe(feature_cols)
+        raw_probas = self.model.predict_proba(X_scaled)[:, 1]
+        probas = self._calibrate_array(raw_probas)
+        threshold = self.decision_threshold
+
+        indexed_rows: list[dict] = []
+        for idx, (_, row) in enumerate(filtered.iterrows()):
+            proba = float(probas[idx])
+            proba_raw = float(raw_probas[idx])
+            risk = self._risk_level(proba)
+            predicted_churn = proba >= threshold
+            customer = row.to_dict()
+            factors = self._top_factors(X_scaled[idx], toward_churn=True)
+            if risk == "Low":
+                action = "—"
+            else:
+                action = recommended_action(
+                    factors,
+                    predicted_churn=predicted_churn if risk == "High" else True,
+                    customer=customer,
+                )
+            indexed_rows.append({
+                "customer_id": row.get("customerID", "—"),
+                "contract": row.get("Contract", "—"),
+                "tenure": int(row.get("tenure", 0)),
+                "monthly_charges": round(float(row.get("MonthlyCharges", 0)), 2),
+                "churn_probability": round(proba_raw * 100, 2),
+                "risk_level": risk,
+                "recommended_action": action,
+                "_proba": proba,
+            })
+        return indexed_rows
+
     def load(self) -> None:
         try:
             self.model = pickle.loads((MODEL_DIR / "churn_model.pkl").read_bytes())
@@ -216,7 +280,9 @@ class ChurnPredictor:
             "confidence": round(confidence * 100, 1),
             "risk_level": risk,
             "top_factors": factors,
-            "recommended_action": recommended_action(factors, predicted_churn=bool(pred)),
+            "recommended_action": recommended_action(
+                factors, predicted_churn=bool(pred), customer=data
+            ),
             "explainability_note": self.stats.get(
                 "explainability_note",
                 "SHAP attributions describe model reasoning, not causal effects.",
@@ -547,38 +613,10 @@ class ChurnPredictor:
                 },
             }
 
-        feature_cols = filtered.drop(columns=["Churn"], errors="ignore")
-        X_scaled = self._encode_dataframe(feature_cols)
-        probas = self._calibrate_array(self.model.predict_proba(X_scaled)[:, 1])
-        threshold = self.decision_threshold
-
-        indexed_rows = []
-        for idx, (_, row) in enumerate(filtered.iterrows()):
-            proba = float(probas[idx])
-            risk = self._risk_level(proba)
-            predicted_churn = proba >= threshold
-            factors = self._top_factors(X_scaled[idx], toward_churn=True)
-            if risk == "High" and predicted_churn:
-                action = recommended_action(factors, predicted_churn=True)
-            elif risk == "Medium":
-                action = recommended_action(factors, predicted_churn=predicted_churn)
-            else:
-                action = "—"
-            indexed_rows.append({
-                "customer_id": row.get("customerID", "—"),
-                "contract": row.get("Contract", "—"),
-                "tenure": int(row.get("tenure", 0)),
-                "monthly_charges": round(float(row.get("MonthlyCharges", 0)), 2),
-                "churn_probability": round(proba * 100, 2),
-                "risk_level": risk,
-                "recommended_action": action,
-                "_proba": proba,
-            })
-
-        indexed_rows.sort(key=lambda r: r["_proba"], reverse=True)
-        risk_rows = [{k: v for k, v in r.items() if k != "_proba"} for r in indexed_rows[:200]]
-
-        high_risk = [r for r in risk_rows if r["risk_level"] == "High"]
+        indexed_rows = self._score_filtered_customers(filtered)
+        high_risk = [r for r in indexed_rows if r["risk_level"] == "High"]
+        display_rows = self._select_risk_table_rows(indexed_rows)
+        risk_rows = [{k: v for k, v in r.items() if k != "_proba"} for r in display_rows]
         revenue_at_risk = sum(r["monthly_charges"] for r in high_risk)
 
         return {
@@ -598,12 +636,13 @@ class ChurnPredictor:
         months: int = 6,
         success_rate_pct: float = 25.0,
     ) -> dict:
-        dash = self.dashboard_data()
-        risk_rows = sorted(
-            dash.get("risk_table", []),
-            key=lambda r: r.get("churn_probability", 0),
-            reverse=True,
-        )
+        df = self._ensure_df()
+        if df is None or not self.ready:
+            return {"months": [], "do_nothing": [], "retain": [], "retain_pct": retain_pct}
+
+        scored = self._score_filtered_customers(df)
+        risk_rows = sorted(scored, key=lambda r: r["_proba"], reverse=True)
+        risk_rows = [{k: v for k, v in r.items() if k != "_proba"} for r in risk_rows]
         n = len(risk_rows)
         if n == 0:
             return {"months": [], "do_nothing": [], "retain": [], "retain_pct": retain_pct}

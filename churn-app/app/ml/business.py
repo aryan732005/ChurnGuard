@@ -33,10 +33,59 @@ def _normalize_feature(name: str) -> str:
     return name.lower().replace("_", " ").replace("-", " ")
 
 
-def recommended_action(top_factors: list[dict], *, predicted_churn: bool = True) -> str:
-    """Map top churn-increasing factors to a retention play."""
+def _action_from_customer(customer: dict) -> str | None:
+    """Pick a retention play from customer attributes (tenure, contract, services)."""
+    tenure = int(customer.get("tenure", 0) or 0)
+    contract = str(customer.get("Contract", ""))
+    pm = str(customer.get("PaymentMethod", "")).lower()
+    internet = str(customer.get("InternetService", "")).lower()
+    online_sec = str(customer.get("OnlineSecurity", "")).lower()
+    tech = str(customer.get("TechSupport", "")).lower()
+    streaming = (
+        str(customer.get("StreamingTV", "")).lower() == "yes"
+        or str(customer.get("StreamingMovies", "")).lower() == "yes"
+    )
+
+    if contract == "Month-to-month" and "electronic check" in pm:
+        return "Convert to auto-pay and offer a contract incentive"
+    if contract == "Month-to-month":
+        return "Offer loyalty discount or upgrade from month-to-month plan"
+    if "electronic check" in pm:
+        return "Incentivize switch to automatic bank/card payment"
+    if "mailed check" in pm:
+        return "Convert to paperless auto-pay with a small credit"
+    if internet == "fiber optic" and online_sec == "no":
+        return "Offer discounted online security bundle"
+    if internet == "fiber optic":
+        return "Bundle tech support or online security for fiber customers"
+    if internet == "dsl":
+        return "Upsell speed or security package to improve value"
+    if tech == "no":
+        return "Proactive support outreach and dedicated help session"
+    if streaming:
+        return "Bundle streaming with support to increase stickiness"
+    if tenure <= 12:
+        return "Early-tenure engagement and onboarding check-in"
+    if tenure > 48:
+        return "Schedule renewal review before contract end"
+    return None
+
+
+def recommended_action(
+    top_factors: list[dict],
+    *,
+    predicted_churn: bool = True,
+    customer: dict | None = None,
+) -> str:
+    """Map churn drivers and customer profile to a retention play."""
     if not predicted_churn:
         return MONITOR_ACTION
+
+    if customer:
+        customer_action = _action_from_customer(customer)
+        if customer_action:
+            return customer_action
+
     if not top_factors:
         return DEFAULT_ACTION
 
