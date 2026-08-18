@@ -14,7 +14,7 @@ import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 
 from app.config import DATA_DIR, MODEL_DIR
-from app.ml.business import recommended_action, roi_estimate
+from app.ml.business import MONITOR_ACTION, recommended_action, roi_estimate
 from app.ml.features import apply_feature_engineering_df, apply_feature_engineering_row
 from app.observability.logging_config import latency_stats
 
@@ -40,6 +40,15 @@ class ChurnPredictor:
     def decision_threshold(self) -> float:
         th = self.stats.get("threshold_optimization", {})
         return float(th.get("optimal_threshold", 0.5))
+
+    def _risk_level(self, proba: float) -> str:
+        """Align risk bands with the model decision threshold."""
+        threshold = self.decision_threshold
+        if proba >= threshold:
+            return "High"
+        if proba >= max(0.05, threshold - 0.10):
+            return "Medium"
+        return "Low"
 
     def load(self) -> None:
         try:
@@ -195,16 +204,8 @@ class ChurnPredictor:
         confidence = abs(proba - threshold) / max(threshold, 1 - threshold, 0.05)
         confidence = min(confidence, 1.0)
 
-        high_t = min(0.95, threshold + 0.15)
-        low_t = max(0.05, threshold - 0.15)
-        if proba >= high_t:
-            risk = "High"
-        elif proba >= low_t:
-            risk = "Medium"
-        else:
-            risk = "Low"
-
-        factors = self._top_factors(X_scaled[0])
+        risk = self._risk_level(proba)
+        factors = self._top_factors(X_scaled[0], toward_churn=True)
         elapsed_ms = (time.perf_counter() - t0) * 1000
 
         return {
@@ -215,7 +216,7 @@ class ChurnPredictor:
             "confidence": round(confidence * 100, 1),
             "risk_level": risk,
             "top_factors": factors,
-            "recommended_action": recommended_action(factors) if pred else "Continue standard service — monitor quarterly",
+            "recommended_action": recommended_action(factors, predicted_churn=bool(pred)),
             "explainability_note": self.stats.get(
                 "explainability_note",
                 "SHAP attributions describe model reasoning, not causal effects.",
@@ -223,21 +224,27 @@ class ChurnPredictor:
             "inference_ms": round(elapsed_ms, 2),
         }
 
-    def _top_factors(self, row: np.ndarray, n: int = 5) -> list[dict]:
+    def _top_factors(self, row: np.ndarray, n: int = 5, *, toward_churn: bool = True) -> list[dict]:
         if hasattr(self.model, "coef_"):
             contribs = [
                 (self.feature_names[i], float(self.model.coef_[0][i] * row[i]))
                 for i in range(len(self.feature_names))
             ]
+            if toward_churn:
+                contribs = [(f, v) for f, v in contribs if v > 0]
+                contribs.sort(key=lambda x: x[1], reverse=True)
+            else:
+                contribs = [(f, v) for f, v in contribs if v < 0]
+                contribs.sort(key=lambda x: x[1])
         elif hasattr(self.model, "feature_importances_"):
             contribs = [
                 (self.feature_names[i], float(self.model.feature_importances_[i] * abs(row[i])))
                 for i in range(len(self.feature_names))
             ]
+            contribs.sort(key=lambda x: x[1], reverse=True)
         else:
             return []
 
-        contribs.sort(key=lambda x: abs(x[1]), reverse=True)
         return [
             {"feature": f.replace("_", " "), "impact": round(v, 4)}
             for f, v in contribs[:n]
@@ -528,30 +535,50 @@ class ChurnPredictor:
                 rate = (filtered.loc[mask, "Churn"] == "Yes").mean() * 100
                 trend.append({"period": str(label), "churn_rate": round(rate, 1)})
 
-        sample = filtered.head(200).copy()
-        risk_rows = []
-        for _, row in sample.iterrows():
-            try:
-                payload = row.drop(["Churn", "customerID"], errors="ignore").to_dict()
-                pred = self.predict_one(payload)
-                action = pred.get("recommended_action", "")
-                if pred["risk_level"] != "High":
-                    action = "—"
-                risk_rows.append({
-                    "customer_id": row.get("customerID", "—"),
-                    "contract": row.get("Contract", "—"),
-                    "tenure": int(row.get("tenure", 0)),
-                    "monthly_charges": round(float(row.get("MonthlyCharges", 0)), 2),
-                    "churn_probability": pred["churn_probability"],
-                    "risk_level": pred["risk_level"],
-                    "recommended_action": action,
-                    "top_factor": pred["top_factors"][0]["feature"] if pred.get("top_factors") else "",
-                    "top_reasons": [
-                        f["feature"] for f in (pred.get("top_factors") or [])[:3]
-                    ],
-                })
-            except Exception:
-                continue
+        if not self.ready or filtered.empty:
+            return {
+                "churn_trend": trend,
+                "risk_table": [],
+                "revenue_at_risk": 0,
+                "summary": {
+                    "total": len(filtered),
+                    "churn_rate": round(churn_rate, 1),
+                    "high_risk_count": 0,
+                },
+            }
+
+        feature_cols = filtered.drop(columns=["Churn"], errors="ignore")
+        X_scaled = self._encode_dataframe(feature_cols)
+        probas = self._calibrate_array(self.model.predict_proba(X_scaled)[:, 1])
+        threshold = self.decision_threshold
+
+        indexed_rows = []
+        for idx, (_, row) in enumerate(filtered.iterrows()):
+            proba = float(probas[idx])
+            risk = self._risk_level(proba)
+            predicted_churn = proba >= threshold
+            factors = self._top_factors(X_scaled[idx], toward_churn=True)
+            if risk == "High" and predicted_churn:
+                action = recommended_action(factors, predicted_churn=True)
+            elif risk == "Medium":
+                action = recommended_action(factors, predicted_churn=predicted_churn)
+            else:
+                action = "—"
+            indexed_rows.append({
+                "customer_id": row.get("customerID", "—"),
+                "contract": row.get("Contract", "—"),
+                "tenure": int(row.get("tenure", 0)),
+                "monthly_charges": round(float(row.get("MonthlyCharges", 0)), 2),
+                "churn_probability": round(proba * 100, 2),
+                "risk_level": risk,
+                "recommended_action": action,
+                "top_factor": factors[0]["feature"] if factors else "",
+                "top_reasons": [f["feature"] for f in factors[:3]],
+                "_proba": proba,
+            })
+
+        indexed_rows.sort(key=lambda r: r["_proba"], reverse=True)
+        risk_rows = [{k: v for k, v in r.items() if k != "_proba"} for r in indexed_rows[:200]]
 
         high_risk = [r for r in risk_rows if r["risk_level"] == "High"]
         revenue_at_risk = sum(r["monthly_charges"] for r in high_risk)
